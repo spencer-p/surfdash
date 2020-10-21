@@ -8,10 +8,12 @@ import (
 )
 
 const (
-	NOAA_URL = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
-	TIME_FMT = "20060102"
+	NOAA_URL       = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
+	QUERY_TIME_FMT = "20060102"
 )
 
+// GetPredictions builds a query and sends a request to NOAA for tide prediction
+// data.
 func GetPredictions(q *PredictionQuery) (PredictionList, error) {
 	var result Predictions
 
@@ -39,8 +41,8 @@ func GetPredictions(q *PredictionQuery) (PredictionList, error) {
 
 func (q *PredictionQuery) build() url.Values {
 	vals := make(url.Values)
-	vals.Add("begin_date", q.Start.Format(TIME_FMT))
-	vals.Add("end_date", q.End.Format(TIME_FMT))
+	vals.Add("begin_date", q.Start.Format(QUERY_TIME_FMT))
+	vals.Add("end_date", q.End.Format(QUERY_TIME_FMT))
 	vals.Add("station", fmt.Sprintf("%d", q.Station))
 	vals.Add("product", "predictions")
 	vals.Add("datum", "MLLW")

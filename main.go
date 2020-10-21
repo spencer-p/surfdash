@@ -8,12 +8,10 @@ import (
 )
 
 func main() {
-	fmt.Println("vim-go")
-
 	query := noaa.PredictionQuery{
 		Start:   time.Now(),
-		End:     time.Now().Add(24 * time.Hour),
-		Station: 9413745,
+		End:     time.Now().Add(2 * 24 * time.Hour),
+		Station: noaa.SantaCruz,
 	}
 
 	preds, err := noaa.GetPredictions(&query)
@@ -22,5 +20,7 @@ func main() {
 		return
 	}
 
-	fmt.Printf("%+v\n", preds)
+	for _, pred := range preds {
+		fmt.Printf("%+v\n", pred)
+	}
 }
