@@ -42,7 +42,7 @@ func GetPredictions(q *PredictionQuery) (PredictionList, error) {
 func (q *PredictionQuery) build() url.Values {
 	vals := make(url.Values)
 	vals.Add("begin_date", q.Start.Format(QUERY_TIME_FMT))
-	vals.Add("end_date", q.End.Format(QUERY_TIME_FMT))
+	vals.Add("end_date", q.Start.Add(q.Duration).Format(QUERY_TIME_FMT))
 	vals.Add("station", fmt.Sprintf("%d", q.Station))
 	vals.Add("product", "predictions")
 	vals.Add("datum", "MLLW")

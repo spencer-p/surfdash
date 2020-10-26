@@ -35,8 +35,9 @@ type Predictions struct {
 // PredictionQuery is used to query tide data at a station in a given time
 // window; see GetPredictions.
 type PredictionQuery struct {
-	Start, End time.Time
-	Station    Station
+	Start    time.Time
+	Duration time.Duration
+	Station  Station
 }
 
 type Station int
@@ -115,7 +116,7 @@ func (t Tide) String() string {
 
 func (p Prediction) String() string {
 	return fmt.Sprintf("{t: %s, v: %f, type: %s}",
-		time.Time(p.Time).String(),
+		time.Time(p.Time).Format(time.RFC822),
 		p.Height,
 		p.Type.String())
 }

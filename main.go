@@ -9,9 +9,9 @@ import (
 
 func main() {
 	query := noaa.PredictionQuery{
-		Start:   time.Now(),
-		End:     time.Now().Add(2 * 24 * time.Hour),
-		Station: noaa.SantaCruz,
+		Start:    time.Now(),
+		Duration: 2 * 24 * time.Hour,
+		Station:  noaa.SantaCruz,
 	}
 
 	preds, err := noaa.GetPredictions(&query)
