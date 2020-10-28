@@ -27,9 +27,12 @@ type GoodTime struct {
 func (gt *GoodTime) String() string {
 	var day string
 	if isToday(gt.Time) {
-		day = "today"
+		day = "Today"
 	} else if isTomorrow(gt.Time) {
-		day = "tomorrow"
+		day = "Tomorrow"
+
+	} else if withinWeek(gt.Time) {
+		day = gt.Time.Weekday().String()
 	} else {
 		day = gt.Time.Format(dayFmt)
 	}

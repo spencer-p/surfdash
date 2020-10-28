@@ -1,6 +1,7 @@
 package meta
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -24,7 +25,7 @@ func TestGoodTimeString(t *testing.T) {
 				"you will be barreled",
 			},
 		},
-		want: "today at 4:27 PM, the sun is up and you will be barreled",
+		want: "Today at 4:27 PM, the sun is up and you will be barreled",
 	}, {
 		gt: GoodTime{
 			Time: setClock(time.Now().Add(24*time.Hour), 12, 55),
@@ -34,7 +35,15 @@ func TestGoodTimeString(t *testing.T) {
 				"it's lunch time",
 			},
 		},
-		want: "tomorrow at 12:55 PM, the sun is up and you will be barreled and it's lunch time",
+		want: "Tomorrow at 12:55 PM, the sun is up and you will be barreled and it's lunch time",
+	}, {
+		gt: GoodTime{
+			// Set the time to three days from now so as not to trigger
+			// today/tomorrow behavior.
+			Time:    setClock(time.Now().Add(3*24*time.Hour), 13, 0),
+			Reasons: []string{"the weather is nice"},
+		},
+		want: fmt.Sprintf("%s at 1:00 PM, the weather is nice", time.Now().Add(3*24*time.Hour).Weekday().String()),
 	}}
 
 	for _, tc := range table {
