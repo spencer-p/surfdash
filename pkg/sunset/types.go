@@ -18,8 +18,8 @@ var (
 	}
 )
 
-// SunEventList is a time series of SunEvent.
-type SunEventList []SunEvent
+// SunEvents is a time series of SunEvent.
+type SunEvents []SunEvent
 
 // SunEvent is a sunrise or sunset event.
 type SunEvent struct {
