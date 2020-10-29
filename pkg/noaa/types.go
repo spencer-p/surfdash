@@ -24,12 +24,12 @@ var _ json.Unmarshaler = &Time{}
 var _ json.Unmarshaler = new(Height)
 var _ json.Unmarshaler = new(Tide)
 
-// PredictionList is a time series of Prediction.
-type PredictionList []Prediction
+// Predictions is a time series of Prediction.
+type Predictions []Prediction
 
-// Predictions is the data type returned by the NOAA API.
-type Predictions struct {
-	Predictions PredictionList `json:"predictions"`
+// NOAAResult is the data type returned by the NOAA API.
+type NOAAResult struct {
+	Predictions Predictions `json:"predictions"`
 }
 
 // PredictionQuery is used to query tide data at a station in a given time

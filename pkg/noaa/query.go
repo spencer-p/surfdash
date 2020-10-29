@@ -3,27 +3,24 @@ package noaa
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 )
 
-const (
-	NOAA_URL       = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
-	QUERY_TIME_FMT = "20060102"
-)
+const QUERY_TIME_FMT = "20060102"
+
+var NOAA_URL = url.URL{
+	Scheme: "https",
+	Host:   "api.tidesandcurrents.noaa.gov",
+	Path:   "/api/prod/datagetter",
+}
 
 // GetPredictions builds a query and sends a request to NOAA for tide prediction
 // data.
-func GetPredictions(q *PredictionQuery) (PredictionList, error) {
-	var result Predictions
-
+func GetPredictions(q *PredictionQuery) (Predictions, error) {
 	// Build request URL first
-	addr, err := url.Parse(NOAA_URL)
-	if err != nil {
-		return nil, err
-	}
-
-	addr.RawQuery = q.build().Encode()
+	addr := q.url()
 
 	// Make the request to NOAA
 	resp, err := http.Get(addr.String())
@@ -32,11 +29,18 @@ func GetPredictions(q *PredictionQuery) (PredictionList, error) {
 	}
 	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+	result, err := decodeResponse(resp.Body)
+	if err != nil {
+		return Predictions{}, err
 	}
 
 	return result.Predictions, nil
+}
+
+func (q *PredictionQuery) url() *url.URL {
+	addr := NOAA_URL
+	addr.RawQuery = q.build().Encode()
+	return &addr
 }
 
 func (q *PredictionQuery) build() url.Values {
@@ -51,4 +55,12 @@ func (q *PredictionQuery) build() url.Values {
 	vals.Add("units", "english")
 	vals.Add("format", "json")
 	return vals
+}
+
+func decodeResponse(resp io.Reader) (*NOAAResult, error) {
+	var result NOAAResult
+	if err := json.NewDecoder(resp).Decode(&result); err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
