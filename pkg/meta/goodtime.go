@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/spencer-p/surfdash/pkg/noaa"
+	"github.com/spencer-p/surfdash/pkg/sunset"
 )
 
 const (
@@ -15,7 +16,8 @@ const (
 
 // Conditions is the set of data we can perform meta analysis on.
 type Conditions struct {
-	Tides noaa.Predictions
+	Tides     noaa.Predictions
+	SunEvents sunset.SunEvents
 }
 
 // GoodTime represents a good time to go surfing.
