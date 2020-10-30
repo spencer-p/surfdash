@@ -80,7 +80,7 @@ func TestGoodTimes(t *testing.T) {
 			},
 			want: []GoodTime{
 				GoodTime{
-					Time: date("10/30 6:00 PM"),
+					Time: date("10/30 6:00 AM"),
 					Reasons: []string{
 						fmt.Sprintf("tide is low at %f", 0.5),
 						fmt.Sprintf("only %d minutes before sunrise", 20)},
@@ -109,8 +109,11 @@ func TestGoodTimes(t *testing.T) {
 			},
 			want: []GoodTime{
 				GoodTime{
-					Time:    date("10/30 6:00 PM"),
-					Reasons: []string{fmt.Sprintf("tide is low at %f", 0.5), fmt.Sprintf("at sunset")},
+					Time: date("10/30 6:00 PM"),
+					Reasons: []string{
+						fmt.Sprintf("tide is low at %f", 0.5),
+						fmt.Sprintf("%d minutes after sunset", 20),
+					},
 				},
 			},
 		},
@@ -174,7 +177,7 @@ func TestGoodTimes(t *testing.T) {
 			got := GoodTimes(tc.in)
 
 			if diff := cmp.Diff(got, tc.want); diff != "" {
-				t.Errorf("unexpected result: (-got,+want): %s", diff)
+				t.Errorf("incorrect result: (-got,+want): %s", diff)
 			}
 		})
 	}
