@@ -60,9 +60,9 @@ func GoodTimes(c Conditions) []GoodTime {
 			if diff := t.Sub(c.SunEvents[suni].Time); diff < firstLightThresh {
 				// Unless it's close to right after sunset
 				result = append(result, GoodTime{
-					Time: c.SunEvents[suni].Time,
+					Time: t,
 					Reasons: []string{
-						fmt.Sprintf("tide is low at %f", tide.Height),
+						tideReason(tide.Height),
 						fmt.Sprintf("%.0f minutes after sunset", diff.Minutes()),
 					},
 				})
@@ -78,7 +78,7 @@ func GoodTimes(c Conditions) []GoodTime {
 			result = append(result, GoodTime{
 				Time: t,
 				Reasons: []string{
-					fmt.Sprintf("tide is low at %f", tide.Height),
+					tideReason(tide.Height),
 				},
 			})
 			continue
@@ -87,6 +87,10 @@ func GoodTimes(c Conditions) []GoodTime {
 	}
 
 	return result
+}
+
+func tideReason(height noaa.Height) string {
+	return fmt.Sprintf("tide is low at %.2fft", height)
 }
 
 // dawnPatrol finds a GoodTime before dawn.
@@ -99,7 +103,7 @@ func dawnPatrol(tide noaa.Prediction, event sunset.SunEvent) (GoodTime, error) {
 	return GoodTime{
 		Time: t,
 		Reasons: []string{
-			fmt.Sprintf("tide is low at %f", tide.Height),
+			tideReason(tide.Height),
 			fmt.Sprintf("only %.0f minutes before sunrise", diff.Minutes()),
 		},
 	}, nil

@@ -54,7 +54,7 @@ func TestGoodTimes(t *testing.T) {
 			want: []GoodTime{
 				GoodTime{
 					Time:    date("10/30 1:00 PM"),
-					Reasons: []string{fmt.Sprintf("tide is low at %f", 0.5)},
+					Reasons: []string{tideReason(0.5)},
 				},
 			},
 		},
@@ -82,7 +82,7 @@ func TestGoodTimes(t *testing.T) {
 				GoodTime{
 					Time: date("10/30 6:00 AM"),
 					Reasons: []string{
-						fmt.Sprintf("tide is low at %f", 0.5),
+						tideReason(0.5),
 						fmt.Sprintf("only %d minutes before sunrise", 20)},
 				},
 			},
@@ -109,9 +109,9 @@ func TestGoodTimes(t *testing.T) {
 			},
 			want: []GoodTime{
 				GoodTime{
-					Time: date("10/30 6:00 PM"),
+					Time: date("10/30 6:20 PM"),
 					Reasons: []string{
-						fmt.Sprintf("tide is low at %f", 0.5),
+						tideReason(0.5),
 						fmt.Sprintf("%d minutes after sunset", 20),
 					},
 				},
