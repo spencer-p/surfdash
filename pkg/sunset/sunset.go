@@ -4,6 +4,8 @@ import (
 	"math"
 	"time"
 
+	"github.com/spencer-p/surfdash/pkg/timetricks"
+
 	"github.com/keep94/sunrise"
 )
 
@@ -16,7 +18,7 @@ func GetSunEvents(start time.Time, duration time.Duration, place Place) SunEvent
 	// Make sure we start with the correct day
 	// The sunrise package is not very clean with its dates.
 	// TODO Surely this breaks sometimes?
-	for start.Sub(s.Sunrise()) > 0 {
+	for !timetricks.SameDay(start, s.Sunrise()) {
 		s.AddDays(1)
 	}
 

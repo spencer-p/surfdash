@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/spencer-p/surfdash/pkg/timetricks"
 )
 
 const (
@@ -19,12 +21,12 @@ type GoodTime struct {
 
 func (gt *GoodTime) String() string {
 	var day string
-	if isToday(gt.Time) {
+	if timetricks.Today(gt.Time) {
 		day = "Today"
-	} else if isTomorrow(gt.Time) {
+	} else if timetricks.Tomorrow(gt.Time) {
 		day = "Tomorrow"
 
-	} else if withinWeek(gt.Time) {
+	} else if timetricks.WithinWeek(gt.Time) {
 		day = gt.Time.Weekday().String()
 	} else {
 		day = gt.Time.Format(dayFmt)

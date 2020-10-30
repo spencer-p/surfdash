@@ -1,4 +1,4 @@
-package meta
+package timetricks
 
 import (
 	"time"
@@ -9,15 +9,19 @@ const (
 	weekPlusMinute = 7*24*time.Hour + time.Minute
 )
 
-func isToday(t time.Time) bool {
-	return t.Format(dayFormat) == time.Now().Format(dayFormat)
+func SameDay(t time.Time, t2 time.Time) bool {
+	return t.Format(dayFormat) == t2.Format(dayFormat)
 }
 
-func isTomorrow(t time.Time) bool {
-	return isToday(t.Add(-24 * time.Hour))
+func Today(t time.Time) bool {
+	return SameDay(t, time.Now())
 }
 
-func trimClock(t time.Time) time.Time {
+func Tomorrow(t time.Time) bool {
+	return Today(t.Add(-24 * time.Hour))
+}
+
+func TrimClock(t time.Time) time.Time {
 	h, m, s := t.Clock()
 	return t.Add(-1 *
 		(time.Duration(h)*time.Hour +
@@ -25,17 +29,17 @@ func trimClock(t time.Time) time.Time {
 			time.Duration(s)*time.Second))
 }
 
-func withinWeek(t time.Time) bool {
+func WithinWeek(t time.Time) bool {
 	// Trim current time so they have no wall clock component, just
 	// calendar date, and use it to compute the first minute of the coming week.
 	// Then check if our time t occurs before then, as well as after the start
 	// of today (minus a minute in case t falls at midnight).
-	now := trimClock(time.Now())
+	now := TrimClock(time.Now())
 	firstMinuteOfNextWeek := now.Add(weekPlusMinute)
 	return t.After(now.Add(-1*time.Minute)) && t.Before(firstMinuteOfNextWeek)
 
 }
 
-func setClock(t time.Time, hour, minute time.Duration) time.Time {
-	return trimClock(t).Add(hour*time.Hour + minute*time.Minute)
+func SetClock(t time.Time, hour, minute time.Duration) time.Time {
+	return TrimClock(t).Add(hour*time.Hour + minute*time.Minute)
 }

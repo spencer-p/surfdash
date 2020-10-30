@@ -1,4 +1,4 @@
-package meta
+package timetricks
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 func ExampleWithinWeek() {
 	t := time.Now()
 	for i := 0; i < 8; i++ {
-		fmt.Println(i, withinWeek(t.Add(time.Duration(i)*24*time.Hour)))
+		fmt.Println(i, WithinWeek(t.Add(time.Duration(i)*24*time.Hour)))
 	}
 	// Output:
 	// 0 true

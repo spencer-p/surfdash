@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/spencer-p/surfdash/pkg/timetricks"
 )
 
 func TestGoodTimeString(t *testing.T) {
@@ -19,7 +21,7 @@ func TestGoodTimeString(t *testing.T) {
 		want: "01/05 at 5:35 AM, there is no kelp",
 	}, {
 		gt: GoodTime{
-			Time: setClock(time.Now(), 16, 27),
+			Time: timetricks.SetClock(time.Now(), 16, 27),
 			Reasons: []string{
 				"the sun is up",
 				"you will be barreled",
@@ -28,7 +30,7 @@ func TestGoodTimeString(t *testing.T) {
 		want: "Today at 4:27 PM, the sun is up and you will be barreled",
 	}, {
 		gt: GoodTime{
-			Time: setClock(time.Now().Add(24*time.Hour), 12, 55),
+			Time: timetricks.SetClock(time.Now().Add(24*time.Hour), 12, 55),
 			Reasons: []string{
 				"the sun is up",
 				"you will be barreled",
@@ -40,7 +42,7 @@ func TestGoodTimeString(t *testing.T) {
 		gt: GoodTime{
 			// Set the time to three days from now so as not to trigger
 			// today/tomorrow behavior.
-			Time:    setClock(time.Now().Add(3*24*time.Hour), 13, 0),
+			Time:    timetricks.SetClock(time.Now().Add(3*24*time.Hour), 13, 0),
 			Reasons: []string{"the weather is nice"},
 		},
 		want: fmt.Sprintf("%s at 1:00 PM, the weather is nice", time.Now().Add(3*24*time.Hour).Weekday().String()),
