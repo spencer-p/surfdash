@@ -26,6 +26,7 @@ func GetSunEvents(start time.Time, duration time.Duration, place Place) SunEvent
 	for i := 0; i < numDays*2; i += 2 {
 		ret[i] = SunEvent{s.Sunrise(), Sunrise}
 		ret[i+1] = SunEvent{s.Sunset(), Sunset}
+		s.AddDays(1)
 	}
 	return ret
 }
