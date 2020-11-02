@@ -4,13 +4,20 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/kelseyhightower/envconfig"
 
 	"github.com/spencer-p/surfdash/pkg/meta"
 	"github.com/spencer-p/surfdash/pkg/noaa"
 	"github.com/spencer-p/surfdash/pkg/sunset"
 )
+
+type Config struct {
+	Port   string `default:"8080"`
+	Prefix string `default:"/"`
+}
 
 func fetchGoodTimes(numDays int) ([]meta.GoodTime, error) {
 	query := noaa.PredictionQuery{
@@ -48,14 +55,26 @@ func serveGoodTimes(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	PORT := "8080"
-	if envPort := os.Getenv("PORT"); envPort != "" {
-		PORT = envPort
+	var env Config
+	if err := envconfig.Process("", &env); err != nil {
+		log.Fatal(err.Error())
 	}
 
-	http.HandleFunc("/api/v1/goodtimes", serveGoodTimes)
+	r := mux.NewRouter().StrictSlash(true)
+	s := r.PathPrefix(env.Prefix).Subrouter()
 
-	addr := "0.0.0.0:" + PORT
-	log.Printf("Listening and serving on %s", addr)
-	log.Println(http.ListenAndServe(addr, nil))
+	s.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s", r.Method, r.URL)
+		fmt.Fprintf(w, "hello world\n")
+	})
+	s.HandleFunc("/api/v1/goodtimes", serveGoodTimes)
+
+	srv := &http.Server{
+		Handler:      r,
+		Addr:         "0.0.0.0:" + env.Port,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+	log.Printf("Listening and serving on %s/%s", srv.Addr, env.Prefix[1:])
+	log.Fatal(srv.ListenAndServe())
 }
