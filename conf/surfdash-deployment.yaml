@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: surfdash
+  labels:
+    app: surfdash
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: surfdash
+  template:
+    metadata:
+      labels:
+        app: surfdash
+    spec:
+      containers:
+      - name: surfdash
+        image: ko://github.com/spencer-p/surfdash
+        ports:
+        - containerPort: 8080
+        env:
+        - name: TZ
+          value: "America/Los_Angeles"
+        - name: PREFIX
+          value: "/surfdash"
