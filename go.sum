@@ -6,4 +6,6 @@ github.com/keep94/sunrise v1.0.1 h1:o2Mj+rJFGGdEOYIw6RhdI23ZZ1WfyKPH/BEp8es3rlQ=
 github.com/keep94/sunrise v1.0.1/go.mod h1:5J+OxXXSYjNwQqU9bLY2qjpPvWj00O2ZFt9l4JXUILc=
 github.com/kelseyhightower/envconfig v1.4.0 h1:Im6hONhd3pLkfDFsbRgu68RDNkGF1r3dvMUtDTo2cv8=
 github.com/kelseyhightower/envconfig v1.4.0/go.mod h1:cccZRl6mQpaq41TPp5QxidR+Sa3axMbJDNb//FQX6Gg=
+github.com/spencer-p/helpttp v0.0.0-20201103033013-06fea9d58288 h1:BduDL5hq/FgMPi21gkaFQhAtyYXjxwNDV0jzbhKj1hQ=
+github.com/spencer-p/helpttp v0.0.0-20201103033013-06fea9d58288/go.mod h1:0hm0skki2sTEYld9OvUsOGwayKa2A3jc3O9ptcFNjjI=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=

@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/spencer-p/helpttp"
 
 	"github.com/spencer-p/surfdash/pkg/meta"
 	"github.com/spencer-p/surfdash/pkg/noaa"
@@ -38,7 +39,6 @@ func fetchGoodTimes(numDays int) ([]meta.GoodTime, error) {
 }
 
 func serveGoodTimes(w http.ResponseWriter, r *http.Request) {
-	log.Printf("%s %s", r.Method, r.URL)
 	w.Header().Add("Content-Type", "text/plain")
 	goodTimes, err := fetchGoodTimes(7) // 7 days of forecast
 	if err != nil {
@@ -61,10 +61,10 @@ func main() {
 	}
 
 	r := mux.NewRouter().StrictSlash(true)
+	r.Use(helpttp.WithLog)
 	s := r.PathPrefix(env.Prefix).Subrouter()
 
 	s.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s", r.Method, r.URL)
 		fmt.Fprintf(w, "hello world\n")
 	})
 	s.HandleFunc("/api/v1/goodtimes", serveGoodTimes)
