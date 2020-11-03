@@ -26,7 +26,7 @@ func main() {
 	s := r.PathPrefix(env.Prefix).Subrouter()
 
 	s.HandleFunc("/", handleIndex)
-	s.HandleFunc("/api/v1/goodtimes", serveGoodTimes)
+	s.Handle("/api/v1/goodtimes", makeServeGoodTimes())
 
 	srv := &http.Server{
 		Handler:      r,
