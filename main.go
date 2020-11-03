@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -9,49 +8,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/spencer-p/helpttp"
-
-	"github.com/spencer-p/surfdash/pkg/meta"
-	"github.com/spencer-p/surfdash/pkg/noaa"
-	"github.com/spencer-p/surfdash/pkg/sunset"
 )
 
 type Config struct {
 	Port   string `default:"8080"`
 	Prefix string `default:"/"`
-}
-
-func fetchGoodTimes(numDays int) ([]meta.GoodTime, error) {
-	query := noaa.PredictionQuery{
-		Start:    time.Now(),
-		Duration: time.Duration(numDays) * 24 * time.Hour,
-		Station:  noaa.SantaCruz,
-	}
-
-	preds, err := noaa.GetPredictions(&query)
-	if err != nil {
-		return nil, err
-	}
-
-	sunevents := sunset.GetSunEvents(time.Now(), query.Duration, sunset.SantaCruz)
-
-	goodTimes := meta.GoodTimes(meta.Conditions{preds, sunevents})
-	return goodTimes, nil
-}
-
-func serveGoodTimes(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Content-Type", "text/plain")
-	goodTimes, err := fetchGoodTimes(7) // 7 days of forecast
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Failed to get data: %+v", err)
-		log.Printf("Failed to get data: %+v", err)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	for _, gt := range goodTimes {
-		fmt.Fprintf(w, "%s\n", gt.String())
-	}
 }
 
 func main() {
@@ -64,9 +25,7 @@ func main() {
 	r.Use(helpttp.WithLog)
 	s := r.PathPrefix(env.Prefix).Subrouter()
 
-	s.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "hello world\n")
-	})
+	s.HandleFunc("/", handleIndex)
 	s.HandleFunc("/api/v1/goodtimes", serveGoodTimes)
 
 	srv := &http.Server{
