@@ -26,7 +26,7 @@ func main() {
 	r := mux.NewRouter().StrictSlash(true)
 	r.Use(helpttp.WithLog)
 	s := r.PathPrefix(env.Prefix).Subrouter()
-	handlers.Register(s)
+	handlers.Register(s, env.Prefix)
 
 	srv := &http.Server{
 		Handler:      r,

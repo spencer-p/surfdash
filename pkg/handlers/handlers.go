@@ -23,18 +23,20 @@ const (
 	day            = 24 * time.Hour
 	forecastLength = 7 * day
 	cacheTTL       = 1 * day
+
+	koDataEnvKey = "KO_DATA_PATH"
 )
 
-func Register(r *mux.Router) {
+func Register(r *mux.Router, prefix string) {
 	dataDir := getDataDir()
 
 	r.Handle("/", makeIndexHandler())
 	r.Handle("/api/v1/goodtimes", makeServeGoodTimes())
-	r.PathPrefix("/static/").Handler(http.FileServer(http.Dir(dataDir)))
+	r.PathPrefix("/static/").Handler(http.StripPrefix(prefix, http.FileServer(http.Dir(dataDir))))
 }
 
 func getDataDir() string {
-	if dir := os.Getenv("KO_DATA_DIR"); dir != "" {
+	if dir := os.Getenv(koDataEnvKey); dir != "" {
 		return dir
 	} else {
 		return "."

@@ -3,6 +3,6 @@ var app = new Vue({
 	data: { goodtimes: [] }
 })
 
-fetch('/api/v1/goodtimes?o=json')
+fetch('api/v1/goodtimes?o=json')
   .then(response => response.json())
   .then(data => app.goodtimes = data);
