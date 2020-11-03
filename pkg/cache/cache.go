@@ -1,14 +1,16 @@
 package cache
 
 import (
+	"sync"
 	"time"
 )
 
-// Timed is a cache that invalidates elements on a timer basis. It is not thread
+// Timed is a cache that invalidates elements on a timer basis. It is thread
 // safe.
 type Timed struct {
 	ttl   time.Duration // in seconds
 	cache map[string]element
+	m     sync.Mutex
 }
 
 // element holds a timestamped value to save.
@@ -28,6 +30,8 @@ func NewTimed(ttl time.Duration) *Timed {
 
 // Set assigns a value to a key.
 func (c *Timed) Set(key string, val []byte) {
+	c.m.Lock()
+	defer c.m.Unlock()
 	c.set(key, val, time.Now())
 }
 
@@ -42,6 +46,8 @@ func (c *Timed) set(key string, val []byte, t time.Time) {
 // Get retrieves a value for a key. The value may not exist or have expired, in
 // which case ok will be false.
 func (c *Timed) Get(key string) (value []byte, ok bool) {
+	c.m.Lock()
+	defer c.m.Unlock()
 	return c.get(key, time.Now())
 }
 
