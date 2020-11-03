@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"bytes"
@@ -12,6 +12,8 @@ import (
 	"github.com/spencer-p/surfdash/pkg/meta"
 	"github.com/spencer-p/surfdash/pkg/noaa"
 	"github.com/spencer-p/surfdash/pkg/sunset"
+
+	"github.com/gorilla/mux"
 )
 
 const (
@@ -19,6 +21,11 @@ const (
 	forecastLength = 7 * day
 	cacheTTL       = 1 * day
 )
+
+func Register(r *mux.Router) {
+	r.HandleFunc("/", handleIndex)
+	r.Handle("/api/v1/goodtimes", makeServeGoodTimes())
+}
 
 func fetchGoodTimes(numDays time.Duration) ([]meta.GoodTime, error) {
 	query := noaa.PredictionQuery{

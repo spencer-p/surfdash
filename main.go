@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/spencer-p/surfdash/pkg/handlers"
+
 	"github.com/gorilla/mux"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/spencer-p/helpttp"
@@ -24,9 +26,7 @@ func main() {
 	r := mux.NewRouter().StrictSlash(true)
 	r.Use(helpttp.WithLog)
 	s := r.PathPrefix(env.Prefix).Subrouter()
-
-	s.HandleFunc("/", handleIndex)
-	s.Handle("/api/v1/goodtimes", makeServeGoodTimes())
+	handlers.Register(s)
 
 	srv := &http.Server{
 		Handler:      r,
