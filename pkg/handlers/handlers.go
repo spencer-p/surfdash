@@ -2,10 +2,13 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"path"
 	"time"
 
 	"github.com/spencer-p/surfdash/pkg/cache"
@@ -23,8 +26,19 @@ const (
 )
 
 func Register(r *mux.Router) {
-	r.HandleFunc("/", handleIndex)
+	dataDir := getDataDir()
+
+	r.Handle("/", makeIndexHandler())
 	r.Handle("/api/v1/goodtimes", makeServeGoodTimes())
+	r.PathPrefix("/static/").Handler(http.FileServer(http.Dir(dataDir)))
+}
+
+func getDataDir() string {
+	if dir := os.Getenv("KO_DATA_DIR"); dir != "" {
+		return dir
+	} else {
+		return "."
+	}
 }
 
 func fetchGoodTimes(numDays time.Duration) ([]meta.GoodTime, error) {
@@ -76,12 +90,21 @@ func makeServeGoodTimes() http.Handler {
 		mw := io.MultiWriter(w, &toCache)
 
 		// serve result
-		w.Header().Add("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusOK)
-		for i, gt := range goodTimes {
-			fmt.Fprintf(mw, "%s", gt.String())
-			if i+1 < len(goodTimes) {
-				fmt.Fprintf(mw, "\n")
+		outputFormat := r.FormValue("o")
+		if outputFormat == "json" {
+			w.Header().Add("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			if err := json.NewEncoder(mw).Encode(goodTimes); err != nil {
+				log.Printf("Failed to encode JSON result: %+v", err)
+			}
+		} else {
+			w.Header().Add("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusOK)
+			for i, gt := range goodTimes {
+				fmt.Fprintf(mw, "%s", gt.String())
+				if i+1 < len(goodTimes) {
+					fmt.Fprintf(mw, "\n")
+				}
 			}
 		}
 
@@ -92,6 +115,9 @@ func makeServeGoodTimes() http.Handler {
 	})
 }
 
-func handleIndex(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "hello world\n")
+func makeIndexHandler() http.Handler {
+	file := path.Join(getDataDir(), "static", "index.html")
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, file)
+	})
 }
