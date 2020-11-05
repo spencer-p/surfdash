@@ -108,6 +108,9 @@ func makeServeGoodTimes() http.Handler {
 					fmt.Fprintf(mw, "\n")
 				}
 			}
+			if len(goodTimes) == 0 {
+				fmt.Fprintf(mw, "No good times found.")
+			}
 		}
 
 		// save the result asynchonously as the cache may block
