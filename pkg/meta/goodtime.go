@@ -57,3 +57,19 @@ func (gt *GoodTime) MarshalJSON() ([]byte, error) {
 		reasons)
 	return buf.Bytes(), nil
 }
+
+// used for unmarshaling tricks
+type altGoodTime struct {
+	UnixTime int64     `json:"unix_time"`
+	Reasons  *[]string `json:"reasons"`
+}
+
+func (gt *GoodTime) UnmarshalJSON(b []byte) error {
+	var alt altGoodTime
+	alt.Reasons = &gt.Reasons
+	if err := json.Unmarshal(b, &alt); err != nil {
+		return err
+	}
+	gt.Time = time.Unix(alt.UnixTime, 0)
+	return nil
+}

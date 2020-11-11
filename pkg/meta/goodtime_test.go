@@ -1,8 +1,10 @@
 package meta
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
+	_ "testing/quick"
 	"time"
 
 	"github.com/spencer-p/surfdash/pkg/timetricks"
@@ -55,5 +57,25 @@ func TestGoodTimeString(t *testing.T) {
 				t.Errorf("got %q, wanted %q", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestGoodTimeRoundTrip(t *testing.T) {
+	gt := GoodTime{
+		Time:    time.Date(1999, time.January, 5, 5, 35, 20, 4, time.Local),
+		Reasons: []string{"there is no kelp"},
+	}
+
+	blob, err := json.Marshal(&gt)
+	if err != nil {
+		t.Errorf("unexpected: %v", err)
+	}
+	var got GoodTime
+	if err := json.Unmarshal(blob, &got); err != nil {
+		t.Errorf("unexpected: %v", err)
+	}
+
+	if gt.String() != got.String() {
+		t.Errorf("failed round trip: %v", got)
 	}
 }

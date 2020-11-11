@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -15,6 +13,7 @@ import (
 	"github.com/spencer-p/surfdash/pkg/meta"
 	"github.com/spencer-p/surfdash/pkg/noaa"
 	"github.com/spencer-p/surfdash/pkg/sunset"
+	"github.com/spencer-p/surfdash/pkg/timetricks"
 
 	"github.com/gorilla/mux"
 )
@@ -31,7 +30,7 @@ func Register(r *mux.Router, prefix string) {
 	dataDir := getDataDir()
 
 	r.Handle("/", makeIndexHandler())
-	r.Handle("/api/v1/goodtimes", makeServeGoodTimes())
+	r.HandleFunc("/api/v1/goodtimes", serveGoodTimes)
 	r.PathPrefix("/static/").Handler(http.StripPrefix(prefix, http.FileServer(http.Dir(dataDir))))
 }
 
@@ -43,81 +42,84 @@ func getDataDir() string {
 	}
 }
 
-func fetchGoodTimes(dur time.Duration) ([]meta.GoodTime, error) {
-	query := noaa.PredictionQuery{
-		Start:    time.Now(),
-		Duration: dur,
-		Station:  noaa.SantaCruz,
-	}
+func makeFetchGoodTimes() func(time.Duration) ([]meta.GoodTime, error) {
+	// cache for an hour at a time.
+	timeCache := cache.NewTimed(1 * time.Hour)
 
-	preds, err := noaa.GetPredictions(&query)
-	if err != nil {
-		return nil, err
-	}
-
-	sunevents := sunset.GetSunEvents(time.Now(), query.Duration, sunset.SantaCruz)
-
-	goodTimes := meta.GoodTimes(meta.Conditions{preds, sunevents})
-	return goodTimes, nil
-}
-
-func makeServeGoodTimes() http.Handler {
-	// cache for slightly less than one day so daily clients don't see stale
-	// data
-	timeCache := cache.NewTimed(23 * time.Hour)
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// cache based on method and URL, which should encapsulate the query
-		key := fmt.Sprintf("%s %s", r.Method, r.URL)
-
+	return func(dur time.Duration) ([]meta.GoodTime, error) {
 		// serve cache version from memory if possible
+		key := timetricks.UniqueDay(time.Now()) + dur.String()
 		if cached, ok := timeCache.Get(key); ok {
-			w.Header().Add("Content-Type", "text/plain")
-			w.WriteHeader(http.StatusOK)
-			w.Write(cached)
-			return
+			var goodTimes []meta.GoodTime
+			if err := json.Unmarshal(cached, &goodTimes); err != nil {
+				return nil, err
+			}
+			return goodTimes, nil
 		}
 		log.Println("No cache data")
 
-		goodTimes, err := fetchGoodTimes(forecastLength)
+		query := noaa.PredictionQuery{
+			Start:    time.Now(),
+			Duration: dur,
+			Station:  noaa.SantaCruz,
+		}
+
+		preds, err := noaa.GetPredictions(&query)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "Failed to get data: %+v", err)
-			log.Printf("Failed to get data: %+v", err)
-			return
+			return nil, err
 		}
 
-		// duplicate the http response onto a buffer for the cache
-		var toCache bytes.Buffer
-		mw := io.MultiWriter(w, &toCache)
+		sunevents := sunset.GetSunEvents(time.Now(), query.Duration, sunset.SantaCruz)
 
-		// serve result
-		outputFormat := r.FormValue("o")
-		if outputFormat == "json" {
-			w.Header().Add("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			if err := json.NewEncoder(mw).Encode(goodTimes); err != nil {
-				log.Printf("Failed to encode JSON result: %+v", err)
-			}
-		} else {
-			w.Header().Add("Content-Type", "text/plain")
-			w.WriteHeader(http.StatusOK)
-			for i, gt := range goodTimes {
-				fmt.Fprintf(mw, "%s", gt.String())
-				if i+1 < len(goodTimes) {
-					fmt.Fprintf(mw, "\n")
-				}
-			}
-			if len(goodTimes) == 0 {
-				fmt.Fprintf(mw, "No good times found.")
-			}
-		}
+		goodTimes := meta.GoodTimes(meta.Conditions{preds, sunevents})
 
-		// save the result asynchonously as the cache may block
+		// save the result to cache asynchonously as it may block
 		go func() {
-			timeCache.Set(key, toCache.Bytes())
+			toCache, err := json.Marshal(&goodTimes)
+			if err != nil {
+				log.Println("Failed to cache good times:", err)
+				return // this error is lost to the user
+			}
+			timeCache.Set(key, toCache)
 		}()
-	})
+
+		return goodTimes, nil
+	}
+}
+
+var fetchGoodTimes = makeFetchGoodTimes()
+
+func serveGoodTimes(w http.ResponseWriter, r *http.Request) {
+	// get the good times
+	goodTimes, err := fetchGoodTimes(forecastLength)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Failed to get data: %+v", err)
+		log.Printf("Failed to get data: %+v", err)
+		return
+	}
+
+	// serve result
+	outputFormat := r.FormValue("o")
+	if outputFormat == "json" {
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(goodTimes); err != nil {
+			log.Printf("Failed to encode JSON result: %+v", err)
+		}
+	} else {
+		w.Header().Add("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		for i, gt := range goodTimes {
+			fmt.Fprintf(w, "%s", gt.String())
+			if i+1 < len(goodTimes) {
+				fmt.Fprintf(w, "\n")
+			}
+		}
+		if len(goodTimes) == 0 {
+			fmt.Fprintf(w, "No good times found.")
+		}
+	}
 }
 
 func makeIndexHandler() http.Handler {

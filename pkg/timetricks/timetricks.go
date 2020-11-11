@@ -43,3 +43,10 @@ func WithinWeek(t time.Time) bool {
 func SetClock(t time.Time, hour, minute time.Duration) time.Time {
 	return TrimClock(t).Add(hour*time.Hour + minute*time.Minute)
 }
+
+// UniqueDay returns a string representation of t that is unique by the day.
+// For instance, two seperate times on the same calendar day return identical
+// strings.
+func UniqueDay(t time.Time) string {
+	return t.Format(dayFormat)
+}
