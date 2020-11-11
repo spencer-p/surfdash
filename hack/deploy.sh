@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -ex
+set -o pipefail -o xtrace -o errexit
 
 # Docker requires root on my system. I awkwardly have to propagate config to the
 # root user, but use kubectl configured as my normal user.
