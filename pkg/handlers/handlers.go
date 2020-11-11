@@ -43,10 +43,10 @@ func getDataDir() string {
 	}
 }
 
-func fetchGoodTimes(numDays time.Duration) ([]meta.GoodTime, error) {
+func fetchGoodTimes(dur time.Duration) ([]meta.GoodTime, error) {
 	query := noaa.PredictionQuery{
 		Start:    time.Now(),
-		Duration: numDays * day,
+		Duration: dur,
 		Station:  noaa.SantaCruz,
 	}
 

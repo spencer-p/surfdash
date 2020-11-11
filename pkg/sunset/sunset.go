@@ -23,7 +23,7 @@ func GetSunEvents(start time.Time, duration time.Duration, place Place) SunEvent
 	}
 
 	// Get sunrises and sunsets for the given number of days.
-	numDays := int(math.Ceil(duration.Hours() / 24))
+	numDays := getDays(duration)
 	ret := make(SunEvents, numDays*2)
 	for i := 0; i < numDays*2; i += 2 {
 		ret[i] = SunEvent{s.Sunrise(), Sunrise}
@@ -31,4 +31,8 @@ func GetSunEvents(start time.Time, duration time.Duration, place Place) SunEvent
 		s.AddDays(1)
 	}
 	return ret
+}
+
+func getDays(t time.Duration) int {
+	return int(math.Ceil(t.Hours() / 24))
 }

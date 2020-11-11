@@ -2,6 +2,8 @@ package sunset
 
 import (
 	"fmt"
+	"testing"
+	"testing/quick"
 	"time"
 )
 
@@ -23,4 +25,20 @@ func ExampleGetSunEvents() {
 	// 02 Nov 20 17:10 PST Sunset
 	// 03 Nov 20 06:36 PST Sunrise
 	// 03 Nov 20 17:09 PST Sunset
+}
+
+func TestGetDays(t *testing.T) {
+	f := func(want int) bool {
+		if want > 1e10 || want < 0 {
+			// skip unreasonably high values
+			return true
+		}
+
+		input := time.Duration(want) * 24 * time.Hour
+		got := getDays(input)
+		return want == got
+	}
+	if err := quick.Check(f, nil); err != nil {
+		t.Error(err)
+	}
 }
