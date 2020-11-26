@@ -25,13 +25,13 @@ func GetPredictions(q *PredictionQuery) (Predictions, error) {
 	// Make the request to NOAA
 	resp, err := http.Get(addr.String())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed GET request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	result, err := decodeResponse(resp.Body)
 	if err != nil {
-		return Predictions{}, err
+		return Predictions{}, fmt.Errorf("failed to parse NOAA response: %w", err)
 	}
 
 	return result.Predictions, nil

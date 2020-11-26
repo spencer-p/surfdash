@@ -52,7 +52,7 @@ func makeFetchGoodTimes() func(time.Duration) ([]meta.GoodTime, error) {
 		if cached, ok := timeCache.Get(key); ok {
 			var goodTimes []meta.GoodTime
 			if err := json.Unmarshal(cached, &goodTimes); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to unmarshal from cache: %w", err)
 			}
 			return goodTimes, nil
 		}
@@ -66,7 +66,7 @@ func makeFetchGoodTimes() func(time.Duration) ([]meta.GoodTime, error) {
 
 		preds, err := noaa.GetPredictions(&query)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to fetch from NOAA: %w", err)
 		}
 
 		sunevents := sunset.GetSunEvents(time.Now(), query.Duration, sunset.SantaCruz)
@@ -94,8 +94,8 @@ func serveGoodTimes(w http.ResponseWriter, r *http.Request) {
 	goodTimes, err := fetchGoodTimes(forecastLength)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Failed to get data: %+v", err)
-		log.Printf("Failed to get data: %+v", err)
+		fmt.Fprintf(w, "Failed to fetch good times: %+v", err)
+		log.Printf("Failed to fetch good times: %+v", err)
 		return
 	}
 

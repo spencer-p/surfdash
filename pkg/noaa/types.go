@@ -51,11 +51,11 @@ type Time time.Time
 func (t *Time) UnmarshalJSON(buf []byte) error {
 	var s string
 	if err := json.Unmarshal(buf, &s); err != nil {
-		return err
+		return fmt.Errorf("prediction time %q not string: %w", buf, err)
 	}
 	parsed, err := time.ParseInLocation(predTimeFormat, s, time.Local)
 	if err != nil {
-		return err
+		return fmt.Errorf("prediction time %q not in fmt %q: %w", s, predTimeFormat, err)
 	}
 	*t = Time(parsed)
 	return nil
@@ -66,11 +66,11 @@ type Height float64
 func (h *Height) UnmarshalJSON(buf []byte) error {
 	var s string
 	if err := json.Unmarshal(buf, &s); err != nil {
-		return err
+		return fmt.Errorf("water height %q not string: %w", buf, err)
 	}
 	parsed, err := strconv.ParseFloat(s, 64)
 	if err != nil {
-		return err
+		return fmt.Errorf("water height %q not a float: %w", s, err)
 	}
 	*h = Height(parsed)
 	return nil
@@ -90,7 +90,7 @@ func (t Tide) Valid() bool {
 func (t *Tide) UnmarshalJSON(buf []byte) error {
 	var s string
 	if err := json.Unmarshal(buf, &s); err != nil {
-		return err
+		return fmt.Errorf("tide %q not a string: %w", buf, err)
 	}
 	switch s {
 	case "H":
