@@ -5,6 +5,10 @@ import (
 	"time"
 )
 
+const (
+	evictTickerFactor = 5
+)
+
 // Timed is a cache that invalidates elements on a timer basis. It is thread
 // safe.
 type Timed struct {
@@ -22,10 +26,14 @@ type element struct {
 // NewTimed creates a new Timed cache where elements will be invalidated after
 // a time in cache corresponding to TTL.
 func NewTimed(ttl time.Duration) *Timed {
-	return &Timed{
+	c := &Timed{
 		ttl:   ttl,
 		cache: make(map[string]element),
 	}
+	// start the background eviction process to prevent the cache from growing
+	// indefinitely.
+	go c.evictForver()
+	return c
 }
 
 // Set assigns a value to a key.
@@ -60,10 +68,37 @@ func (c *Timed) get(key string, t time.Time) (value []byte, ok bool) {
 	}
 
 	// in memory elements might still be invalid
-	if elapsed := t.Sub(el.creation); elapsed > c.ttl {
-		delete(c.cache, key)
+	if c.deleteIfOld(key, el, t) {
 		return nil, false
 	}
 
 	return el.value, true
+}
+
+// evictForever loops forever, deleting old entries. No lock required.
+func (c *Timed) evictForver() {
+	ticker := time.NewTicker(evictTickerFactor * c.ttl)
+	for {
+		c.evict(<-ticker.C)
+	}
+}
+
+// evict removes all outdated entries at time t. No lock required.
+func (c *Timed) evict(t time.Time) {
+	defer c.m.Unlock()
+	c.m.Lock()
+
+	for key, el := range c.cache {
+		c.deleteIfOld(key, el, t)
+	}
+}
+
+// deleteIfOld deletes an entry if it is old. It returns true if it deleted the
+// element. The lock must be held before calling.
+func (c *Timed) deleteIfOld(key string, el element, t time.Time) bool {
+	if elapsed := t.Sub(el.creation); elapsed > c.ttl {
+		delete(c.cache, key)
+		return true
+	}
+	return false
 }
