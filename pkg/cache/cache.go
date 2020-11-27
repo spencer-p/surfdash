@@ -32,7 +32,7 @@ func NewTimed(ttl time.Duration) *Timed {
 	}
 	// start the background eviction process to prevent the cache from growing
 	// indefinitely.
-	go c.evictForver()
+	go c.evictForever()
 	return c
 }
 
@@ -76,15 +76,15 @@ func (c *Timed) get(key string, t time.Time) (value []byte, ok bool) {
 }
 
 // evictForever loops forever, deleting old entries. No lock required.
-func (c *Timed) evictForver() {
+func (c *Timed) evictForever() {
 	ticker := time.NewTicker(evictTickerFactor * c.ttl)
 	for {
-		c.evict(<-ticker.C)
+		c.EvictOutdated(<-ticker.C)
 	}
 }
 
-// evict removes all outdated entries at time t. No lock required.
-func (c *Timed) evict(t time.Time) {
+// EvictOutdated removes all outdated entries at time t. No lock required.
+func (c *Timed) EvictOutdated(t time.Time) {
 	defer c.m.Unlock()
 	c.m.Lock()
 
