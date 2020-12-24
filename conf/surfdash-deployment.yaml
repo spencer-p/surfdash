@@ -6,6 +6,7 @@ metadata:
     app: surfdash
 spec:
   replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: surfdash
@@ -22,5 +23,3 @@ spec:
         env:
         - name: TZ
           value: "America/Los_Angeles"
-        - name: PREFIX
-          value: "/surfdash"
