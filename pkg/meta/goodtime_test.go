@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
-	_ "testing/quick"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/spencer-p/surfdash/pkg/timetricks"
 )
@@ -75,7 +76,7 @@ func TestGoodTimeRoundTrip(t *testing.T) {
 		t.Errorf("unexpected: %v", err)
 	}
 
-	if gt.String() != got.String() {
-		t.Errorf("failed round trip: %v", got)
+	if diff := cmp.Diff(gt.String(), got.String()); diff != "" {
+		t.Errorf("failed round trip (-want,+got):\n%s", diff)
 	}
 }

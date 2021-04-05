@@ -1,7 +1,6 @@
 package meta
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -17,8 +16,13 @@ const (
 
 // GoodTime represents a good time to go surfing.
 type GoodTime struct {
-	Time    time.Time
-	Reasons []string
+	Time     time.Time     `json:unix_time`
+	Reasons  []string      `json:"reasons"`
+	Duration time.Duration `json:"duration",omitempty`
+
+	// PrettyTime is a human-readable version of the time, relative to the
+	// current date. Optional.
+	PrettyTime string `json:"pretty_time",omitempty`
 }
 
 func (gt *GoodTime) String() string {
@@ -45,31 +49,11 @@ func (gt *GoodTime) prettyTime() string {
 }
 
 func (gt *GoodTime) MarshalJSON() ([]byte, error) {
-	reasons, err := json.Marshal(gt.Reasons)
-	if err != nil {
-		return nil, err
+	// Fill in pretty time if needed.
+	if gt.PrettyTime == "" {
+		gt.PrettyTime = gt.prettyTime()
 	}
-
-	var buf bytes.Buffer
-	fmt.Fprintf(&buf, "{\"pretty_time\": \"%s\", \"unix_time\": %d, \"reasons\": %s}",
-		gt.prettyTime(),
-		gt.Time.Unix(),
-		reasons)
-	return buf.Bytes(), nil
-}
-
-// used for unmarshaling tricks
-type altGoodTime struct {
-	UnixTime int64     `json:"unix_time"`
-	Reasons  *[]string `json:"reasons"`
-}
-
-func (gt *GoodTime) UnmarshalJSON(b []byte) error {
-	var alt altGoodTime
-	alt.Reasons = &gt.Reasons
-	if err := json.Unmarshal(b, &alt); err != nil {
-		return err
-	}
-	gt.Time = time.Unix(alt.UnixTime, 0)
-	return nil
+	// Dereference is necessary to avoid infinite loop; this method
+	// only has pointer receiver.
+	return json.Marshal(*gt)
 }
