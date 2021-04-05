@@ -3,7 +3,7 @@ var app = new Vue({
 	data: { goodtimes: [], no_data: "No good times found." }
 });
 
-fetch('api/v1/goodtimes?o=json')
+fetch('api/v2/goodtimes?o=json')
 	.then(response => response.json())
 	.then(data => app.goodtimes = data)
 	.catch((error) => {

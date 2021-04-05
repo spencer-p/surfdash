@@ -43,9 +43,15 @@ func (gt *GoodTime) prettyTime() string {
 		day = gt.Time.Format(dayFmt)
 	}
 
-	return fmt.Sprintf("%s at %s",
+	until := ""
+	if gt.Duration != 0 {
+		until = fmt.Sprintf(" until %s", gt.Time.Add(gt.Duration).Format(timeFmt))
+	}
+
+	return fmt.Sprintf("%s at %s%s",
 		day,
-		gt.Time.Format(timeFmt))
+		gt.Time.Format(timeFmt),
+		until)
 }
 
 func (gt *GoodTime) MarshalJSON() ([]byte, error) {

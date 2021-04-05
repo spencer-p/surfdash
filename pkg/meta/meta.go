@@ -3,15 +3,18 @@ package meta
 import (
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"time"
 
 	"github.com/spencer-p/surfdash/pkg/noaa"
+	"github.com/spencer-p/surfdash/pkg/noaa/splines"
 	"github.com/spencer-p/surfdash/pkg/sunset"
 )
 
 const (
 	tideThresh       = 2.0 // feet
+	smallTideThresh  = 1.0 // feet
 	firstLightThresh = 30 * time.Minute
 )
 
@@ -124,4 +127,53 @@ func indexOfLastEventBefore(t time.Time, events sunset.SunEvents) (int, error) {
 		return -1, notFound
 	}
 	return result, nil
+}
+
+// GoodTimes2 is like GoodTimes but better.
+// TODO Name, document
+func GoodTimes2(c Conditions) []GoodTime {
+	result := []GoodTime{}
+	preds := c.Tides
+
+	tstart := time.Time(preds[0].Time)
+	tend := time.Time(preds[len(preds)-1].Time)
+	step := 30 * time.Minute
+
+	spl := splines.CurvesBetween(preds)
+
+	for t := tstart; t.Before(tend); t = t.Add(step) {
+		var gt GoodTime
+		low := math.MaxFloat64
+		for ; t.Before(tend); t = t.Add(step) {
+			tideHeight := spl.Eval(t)
+			var (
+				sunup = c.SunEvents.SunUp(t)
+				dawn  = c.SunEvents.Dawn(t)
+				dusk  = c.SunEvents.Dusk(t)
+			)
+			// If no low tide or sun, bail.
+			if tideHeight > smallTideThresh {
+				break
+			} else if !(sunup || dawn || dusk) {
+				break
+			}
+
+			// Set the start time of this good time if needed and update the
+			// duration to match.
+			if gt.Time.IsZero() {
+				gt.Time = t
+			}
+			gt.Duration = t.Sub(gt.Time) + step
+
+			// TODO Add reasons in a reasonable way.
+			if tideHeight < low {
+				low = tideHeight
+			}
+		}
+		if !gt.Time.IsZero() {
+			gt.Reasons = append(gt.Reasons, tideReason(noaa.Height(low)))
+			result = append(result, gt)
+		}
+	}
+	return result
 }

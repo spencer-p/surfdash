@@ -31,6 +31,7 @@ func Register(r *mux.Router, prefix string) {
 
 	r.Handle("/", makeIndexHandler())
 	r.HandleFunc("/api/v1/goodtimes", serveGoodTimes)
+	r.HandleFunc("/api/v2/goodtimes", serveGoodTimes2)
 	r.PathPrefix("/static/").Handler(http.StripPrefix(prefix, http.FileServer(http.Dir(dataDir))))
 }
 
@@ -127,4 +128,56 @@ func makeIndexHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, file)
 	})
+}
+
+func serveGoodTimes2(w http.ResponseWriter, r *http.Request) {
+	// get the good times
+	goodTimes, err := fetchGoodTimes2(forecastLength)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Failed to fetch good times: %+v", err)
+		log.Printf("Failed to fetch good times: %+v", err)
+		return
+	}
+
+	// serve result
+	outputFormat := r.FormValue("o")
+	if outputFormat == "json" {
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(goodTimes); err != nil {
+			log.Printf("Failed to encode JSON result: %+v", err)
+		}
+	} else {
+		w.Header().Add("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		for i, gt := range goodTimes {
+			fmt.Fprintf(w, "%s", gt.String())
+			if i+1 < len(goodTimes) {
+				fmt.Fprintf(w, "\n")
+			}
+		}
+		if len(goodTimes) == 0 {
+			fmt.Fprintf(w, "No good times found.")
+		}
+	}
+}
+
+func fetchGoodTimes2(dur time.Duration) ([]meta.GoodTime, error) {
+	query := noaa.PredictionQuery{
+		Start:    time.Now(),
+		Duration: dur,
+		Station:  noaa.SantaCruz,
+	}
+
+	preds, err := noaa.GetPredictions(&query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch from NOAA: %w", err)
+	}
+
+	sunevents := sunset.GetSunEvents(time.Now(), query.Duration, sunset.SantaCruz)
+
+	goodTimes := meta.GoodTimes2(meta.Conditions{preds, sunevents})
+
+	return goodTimes, nil
 }
