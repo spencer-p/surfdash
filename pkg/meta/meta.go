@@ -137,7 +137,7 @@ func GoodTimes2(c Conditions) []GoodTime {
 
 	tstart := time.Time(preds[0].Time)
 	tend := time.Time(preds[len(preds)-1].Time)
-	step := 30 * time.Minute
+	const step = 30 * time.Minute
 
 	spl := splines.CurvesBetween(preds)
 
