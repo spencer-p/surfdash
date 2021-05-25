@@ -137,13 +137,14 @@ func GoodTimes2(c Conditions) []GoodTime {
 
 	tstart := time.Time(preds[0].Time)
 	tend := time.Time(preds[len(preds)-1].Time)
-	const step = 30 * time.Minute
+	const step = 5 * time.Minute
 
 	spl := splines.CurvesBetween(preds)
 
 	for t := tstart; t.Before(tend); t = t.Add(step) {
 		var gt GoodTime
 		low := math.MaxFloat64
+		var lowt time.Time
 		for ; t.Before(tend); t = t.Add(step) {
 			tideHeight := spl.Eval(t)
 			var (
@@ -163,15 +164,28 @@ func GoodTimes2(c Conditions) []GoodTime {
 			if gt.Time.IsZero() {
 				gt.Time = t
 			}
-			gt.Duration = t.Sub(gt.Time) + step
+			gt.Duration = t.Sub(gt.Time) // + step
 
 			// TODO Add reasons in a reasonable way.
 			if tideHeight < low {
 				low = tideHeight
+				lowt = t
 			}
 		}
 		if !gt.Time.IsZero() {
-			gt.Reasons = append(gt.Reasons, tideReason(noaa.Height(low)))
+			if !gt.Time.Equal(lowt) {
+				// The lowest part of good time is not the first time bucket.
+				// This means we can specify the tide height at the start
+				// without being redundant.
+				gt.Reasons = append(gt.Reasons, fmt.Sprintf("tide is %.1fft at %s", noaa.Height(spl.Eval(gt.Time)), gt.Time.Format(timeFmt)))
+			}
+			gt.Reasons = append(gt.Reasons, fmt.Sprintf("tide is %.1fft at %s", noaa.Height(low), lowt.Format(timeFmt)))
+			tend := gt.Time.Add(gt.Duration)
+			if !tend.Equal(lowt) {
+				// The lowest part is not the last time bucket.
+				// Again, we can be more detailed without being redundant.
+				gt.Reasons = append(gt.Reasons, fmt.Sprintf("tide is %.1fft at %s", noaa.Height(spl.Eval(tend)), tend.Format(timeFmt)))
+			}
 			result = append(result, gt)
 		}
 	}

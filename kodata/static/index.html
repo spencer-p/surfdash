@@ -18,7 +18,12 @@
 				<p v-if="goodtimes.length===0">{{ no_data }}</li>
 				<ul>
 					<li v-for="gt in goodtimes">
-						{{ gt.pretty_time }}: {{ gt.reasons.join(" and ") }}
+						{{ gt.pretty_time }}
+						<ul>
+							<li v-for="reason in gt.reasons">
+								{{ reason }}
+							</li>
+						</ul>
 					</li>
 				</ul>
 			</div>
