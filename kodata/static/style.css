@@ -1,7 +1,6 @@
 body {
   font-family: helvetica, arial, sans-serif;
   font-size: x-large;
-  margin: 2em;
 }
 
 @media (min-width: 600px) {
