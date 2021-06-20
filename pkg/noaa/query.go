@@ -1,11 +1,15 @@
 package noaa
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"time"
+
+	"github.com/spencer-p/surfdash/pkg/cache"
 )
 
 const QUERY_TIME_FMT = "20060102"
@@ -16,24 +20,42 @@ var NOAA_URL = url.URL{
 	Path:   "/api/prod/datagetter",
 }
 
+var qcache = cache.NewTimed(12 * time.Hour)
+
 // GetPredictions builds a query and sends a request to NOAA for tide prediction
 // data.
 func GetPredictions(q *PredictionQuery) (Predictions, error) {
 	// Build request URL first
-	addr := q.url()
+	addr := q.url().String()
 
-	// Make the request to NOAA
-	resp, err := http.Get(addr.String())
-	if err != nil {
-		return nil, fmt.Errorf("failed GET request: %w", err)
+	var body []byte
+	var inCache bool
+	body, inCache = qcache.Get(addr)
+	if !inCache {
+		// Make the request to NOAA
+		resp, err := http.Get(addr)
+		if err != nil {
+			return nil, fmt.Errorf("failed GET request: %w", err)
+		}
+		defer resp.Body.Close()
+
+		// Read the full response to a buffer for parsing and caching.
+		buf := new(bytes.Buffer)
+		if _, err := io.Copy(buf, resp.Body); err != nil {
+			return Predictions{}, fmt.Errorf("failed to read NOAA response: %w", err)
+		}
+		body = buf.Bytes()
 	}
-	defer resp.Body.Close()
 
-	result, err := decodeResponse(resp.Body)
+	reader := bytes.NewReader(body)
+	result, err := decodeResponse(reader)
 	if err != nil {
 		return Predictions{}, fmt.Errorf("failed to parse NOAA response: %w", err)
 	}
 
+	if !inCache {
+		qcache.Set(addr, body)
+	}
 	return result.Predictions, nil
 }
 
