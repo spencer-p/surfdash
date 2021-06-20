@@ -33,3 +33,26 @@ func ExampleDiscrete() {
 	// 1
 	// 1
 }
+
+func ExampleSolve() {
+	tstart := time.Time{}
+	tend := tstart.Add(10 * time.Second)
+	preds := noaa.Predictions{{
+		Time:   noaa.Time(tstart),
+		Height: 0,
+	}, {
+		Time:   noaa.Time(tend),
+		Height: 10,
+	}}
+	curve := CurvesBetween(preds)[0]
+	fmt.Printf("A = %.2f\n", curve.a)
+	fmt.Printf("B = %.2f\n", curve.b)
+	fmt.Printf("C = %.2f\n", curve.c)
+	fmt.Printf("D = %.2f\n", curve.d)
+	// Output:
+	// A = -0.02
+	// B = 0.30
+	// C = -0.00
+	// D = 0.00
+
+}
