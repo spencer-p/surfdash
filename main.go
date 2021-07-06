@@ -28,6 +28,10 @@ func main() {
 	s := r.PathPrefix(env.Prefix).Subrouter()
 	handlers.Register(s, env.Prefix)
 
+	if env.Prefix != "/" {
+		r.Handle("/", http.RedirectHandler(env.Prefix, http.StatusFound))
+	}
+
 	srv := &http.Server{
 		Handler:      r,
 		Addr:         "0.0.0.0:" + env.Port,

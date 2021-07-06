@@ -120,3 +120,7 @@ func (p Prediction) String() string {
 		p.Height,
 		p.Type.String())
 }
+
+func (p Prediction) T() time.Time {
+	return time.Time(p.Time)
+}

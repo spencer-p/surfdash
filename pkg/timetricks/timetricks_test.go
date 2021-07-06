@@ -20,3 +20,11 @@ func ExampleWithinWeek() {
 	// 6 true
 	// 7 false
 }
+
+func ExampleTrimClock() {
+	t := time.Date(2020, 03, 14, 19, 45, 6, 500, time.UTC)
+	midnight := TrimClock(t)
+	fmt.Println(midnight.String())
+	// Output:
+	// 2020-03-14 00:00:00 +0000 UTC
+}

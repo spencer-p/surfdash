@@ -14,6 +14,7 @@ import (
 	"github.com/spencer-p/surfdash/pkg/noaa"
 	"github.com/spencer-p/surfdash/pkg/sunset"
 	"github.com/spencer-p/surfdash/pkg/timetricks"
+	"github.com/spencer-p/surfdash/pkg/visualize"
 
 	"github.com/gorilla/mux"
 )
@@ -32,6 +33,7 @@ func Register(r *mux.Router, prefix string) {
 	r.Handle("/", makeIndexHandler())
 	r.HandleFunc("/api/v1/goodtimes", serveGoodTimes)
 	r.HandleFunc("/api/v2/goodtimes", serveGoodTimes2)
+	r.HandleFunc("/api/v2/tide_image", serveTideImage)
 	r.PathPrefix("/static/").Handler(http.StripPrefix(prefix, http.FileServer(http.Dir(dataDir))))
 }
 
@@ -180,4 +182,34 @@ func fetchGoodTimes2(dur time.Duration) ([]meta.GoodTime, error) {
 	goodTimes := meta.GoodTimes2(meta.Conditions{preds, sunevents})
 
 	return goodTimes, nil
+}
+
+func serveTideImage(w http.ResponseWriter, r *http.Request) {
+	query := noaa.PredictionQuery{
+		Start:    time.Now().Add(-1 * 24 * time.Hour),
+		Duration: forecastLength + 24*time.Hour,
+		Station:  noaa.SantaCruz,
+	}
+	preds, err := noaa.GetPredictions(&query)
+	if err != nil {
+		err := fmt.Errorf("failed to fetch from NOAA: %w", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Failed to fetch good times: %+v", err)
+		log.Printf("Failed to fetch good times: %+v", err)
+		return
+	}
+
+	sunevents := sunset.GetSunEvents(time.Now(), query.Duration, sunset.SantaCruz)
+
+	date := r.FormValue("t")
+	t, err := time.Parse(time.RFC3339, date)
+	if err != nil {
+		log.Printf("Failed to read time %q: %v", date, err)
+		t = time.Now()
+	}
+	img := visualize.NewTidal(preds, sunevents)
+	img.SetDate(t)
+	w.Header().Add("Content-Type", "image/svg+xml")
+	w.WriteHeader(http.StatusOK)
+	img.Encode(w)
 }

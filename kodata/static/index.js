@@ -5,7 +5,12 @@ var app = new Vue({
 
 fetch('api/v2/goodtimes?o=json')
 	.then(response => response.json())
-	.then(data => app.goodtimes = data)
+	.then(data => {
+		for (gt of data) {
+			gt.open = false;
+		}
+		app.goodtimes = data;
+	})
 	.catch((error) => {
 		console.error('Error:', error);
 		app.goodtimes = [];

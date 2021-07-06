@@ -6,6 +6,8 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>Surfdash</title>
 		<link rel="stylesheet" href="static/style.css" />
+		<script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+		<!---<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>-->
 		<script src="static/index.js" defer></script>
 	</head>
 	<body>
@@ -15,20 +17,29 @@
 				Loading good times..
 			</div>
 			<div id="goodtimes" hidden>
-				<p v-if="goodtimes.length===0">{{ no_data }}</li>
-				<ul>
-					<li v-for="gt in goodtimes">
-						{{ gt.pretty_time }}
+				<p v-if="goodtimes.length===0">{{ no_data }}</p>
+				<div v-for="gt in goodtimes">
+					<hr>
+					<img v-bind:src="'api/v2/tide_image?t=' + gt.Time"/>
+					<button v-on:click="gt.open = !gt.open">
+						<span v-if=gt.open>
+							&#x25BC;
+						</span>
+						<span v-else>
+							&#x25B6;
+						</span>
+					</button>
+					{{ gt.pretty_time }}
+					<template v-if="gt.open">
 						<ul>
 							<li v-for="reason in gt.reasons">
 								{{ reason }}
 							</li>
 						</ul>
-					</li>
-				</ul>
+					</template>
+				</div>
 			</div>
 		</div>
-		<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 	</body>
 </html>
 

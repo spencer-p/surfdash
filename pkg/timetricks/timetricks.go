@@ -9,26 +9,34 @@ const (
 	weekPlusMinute = 7*24*time.Hour + time.Minute
 )
 
+// SameDay returns true if t and t2 represent the same calendar date.
 func SameDay(t time.Time, t2 time.Time) bool {
 	return t.Format(dayFormat) == t2.Format(dayFormat)
 }
 
+// Today returns true if t is today.
 func Today(t time.Time) bool {
 	return SameDay(t, time.Now())
 }
 
+// Tomorrow returns true if t is tomorrow.
 func Tomorrow(t time.Time) bool {
 	return Today(t.Add(-24 * time.Hour))
 }
 
+// TrimClock removes the wall clock time from t. The resulting time occurs on
+// the same day at 00:00:00.00.
 func TrimClock(t time.Time) time.Time {
+	ns := t.Nanosecond()
 	h, m, s := t.Clock()
 	return t.Add(-1 *
 		(time.Duration(h)*time.Hour +
 			time.Duration(m)*time.Minute +
-			time.Duration(s)*time.Second))
+			time.Duration(s)*time.Second +
+			time.Duration(ns)*time.Nanosecond))
 }
 
+// WithinWeek returns true if t occurs in the upcoming week from today.
 func WithinWeek(t time.Time) bool {
 	// Trim current time so they have no wall clock component, just
 	// calendar date, and use it to compute the first minute of the coming week.
@@ -40,6 +48,8 @@ func WithinWeek(t time.Time) bool {
 
 }
 
+// SetClock sets the wall clock time of t to match the given hour, minute, and
+// no seconds.
 func SetClock(t time.Time, hour, minute time.Duration) time.Time {
 	return TrimClock(t).Add(hour*time.Hour + minute*time.Minute)
 }
