@@ -1,6 +1,3 @@
-/*
- *
- */
 :root {
 	--base-color: #708090;
 	--base-color-light: #e9ecee;
@@ -91,6 +88,14 @@ h1 {
 
 .content {
 	margin: 0px;
+}
+
+.footer {
+	text-align: right;
+}
+
+a {
+	color: var(--accent-tide-graph);
 }
 
 @media (min-width: 600px) {
