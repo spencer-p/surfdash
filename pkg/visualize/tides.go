@@ -53,18 +53,18 @@ func (img *Tidal) Encode(w io.Writer) (int, error) {
 	sundown := img.sunEvents[sunupIndex+1]
 	risex := img.timeToX(sunup.Time)
 	setx := img.timeToX(sundown.Time)
-	io(fmt.Fprintf(w, `<rect fill="lightyellow" x="%d" y="%d" width="%d" height="%d"/>`,
+	io(fmt.Fprintf(w, `<rect class="daytime" fill="lightyellow" x="%d" y="%d" width="%d" height="%d"/>`,
 		risex, 0,
 		setx-risex, height))
 
 	// Draw markers for tide levels.
-	io(fmt.Fprintf(w, `<rect fill="#e76f51" x="%d" y="%d" width="%d" height="%d"/>`,
+	io(fmt.Fprintf(w, `<rect class="two_foot" fill="#e76f51" x="%d" y="%d" width="%d" height="%d"/>`,
 		0, tideHeightToY(2),
 		width, tideHeightToY(1)-tideHeightToY(2)+1))
-	io(fmt.Fprintf(w, `<rect fill="#f4a261" x="%d" y="%d" width="%d" height="%d"/>`,
+	io(fmt.Fprintf(w, `<rect class="one_foot" fill="#f4a261" x="%d" y="%d" width="%d" height="%d"/>`,
 		0, tideHeightToY(1),
 		width, tideHeightToY(0)-tideHeightToY(1)+1))
-	io(fmt.Fprintf(w, `<rect fill="#e9c46a" x="%d" y="%d" width="%d" height="%d"/>`,
+	io(fmt.Fprintf(w, `<rect class="zero_foot" fill="#e9c46a" x="%d" y="%d" width="%d" height="%d"/>`,
 		0, tideHeightToY(0),
 		width, tideHeightToY(-2)-tideHeightToY(0)+1))
 
@@ -98,10 +98,10 @@ func (img *Tidal) Encode(w io.Writer) (int, error) {
 	}
 
 	// Draw the night time shadows.
-	io(fmt.Fprintf(w, `<rect fill="blue" fill-opacity="25%%" x="%d" y="%d" width="%d" height="%d"/>`,
+	io(fmt.Fprintf(w, `<rect class="night" fill="blue" fill-opacity="25%%" x="%d" y="%d" width="%d" height="%d"/>`,
 		0, 0,
 		risex, height))
-	io(fmt.Fprintf(w, `<rect fill="blue" fill-opacity="25%%" x="%d" y="%d" width="%d" height="%d"/>`,
+	io(fmt.Fprintf(w, `<rect class="night" fill="blue" fill-opacity="25%%" x="%d" y="%d" width="%d" height="%d"/>`,
 		setx, 0,
 		width-setx, height))
 

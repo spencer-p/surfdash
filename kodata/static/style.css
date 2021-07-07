@@ -1,27 +1,112 @@
-body {
-  font-family: helvetica, arial, sans-serif;
-  font-size: x-large;
+/*
+ *
+ */
+:root {
+	--base-color: #708090;
+	--base-color-light: #e9ecee;
+	--base-color-dark: #2b3238;
+
+	--accent-yellow: lightyellow;
+	--accent-night: #2b3238;
+
+	--accent-tide: #f4a261;
+	--accent-tide-light: #e76f51;
+	--accent-tide-dark: #e9c46a;
+
+	--accent-tide-graph: #71c5e7;
 }
 
-@media (min-width: 600px) {
-  .content {
-    width: 600px;
-    margin: auto;
-  }
+@media (prefers-color-scheme: dark) {
+	:root {
+		--base-color-dark: #e9ecee;
+		--base-color-light: #2b3238;
+
+		--accent-yellow: #e0e0c0;
+		--accent-night: #708090; 
+
+		--accent-tide: #907080;
+		--accent-tide-light: #d5c8ce;
+		--accent-tide-dark: #59454f;
+	}
+}
+
+body {
+	font-family: "Lucida Console", Courier, monospace;
+	font-weight: bold;
+	background: var(--base-color-light);
+	color: var(--base-color-dark);
 }
 
 h1 {
-  font-style: italic;
-  color: #373fff;
+	color: var(--base-color);
+}
+
+.goodtime_row {
+	display: flex;
+	flex-direction: horizontal;
+}
+
+.date {
+	padding: 1em;
+	writing-mode: vertical-rl;
+}
+
+.goodtime_row:nth-child(odd) .date {
+	background-color: var(--base-color);
+	color: var(--base-color-light);
+}
+
+.goodtime_glance {
+	width: 100%;
+}
+
+.goodtime_text {
+	padding: 1em;
+}
+
+.night {
+	fill: var(--accent-night);
+	fill-opacity: 50%;
+}
+
+.daytime {
+	fill: var(--accent-yellow);
+}
+
+.two_foot {
+	fill: var(--accent-tide-light);
+}
+
+.one_foot {
+	fill: var(--accent-tide);
+}
+
+.zero_foot {
+	fill: var(--accent-tide-dark);
+}
+
+.tide {
+	fill: var(--accent-tide-graph);
+}
+
+.content {
+	margin: 0px;
+}
+
+@media (min-width: 600px) {
+	.content {
+		max-width: 600px;
+		margin: auto;
+	}
 }
 
 /* https://gomakethings.com/smooth-scrolling-links-with-only-css/ */
 html {
-  scroll-behavior: smooth;
+	scroll-behavior: smooth;
 }
 
 @media screen and (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+	html {
+		scroll-behavior: auto;
+	}
 }
