@@ -5,6 +5,7 @@ import (
 )
 
 const (
+	dayFmt         = "01/02"
 	dayFormat      = "20060102"
 	weekPlusMinute = 7*24*time.Hour + time.Minute
 )
@@ -59,4 +60,17 @@ func SetClock(t time.Time, hour, minute time.Duration) time.Time {
 // strings.
 func UniqueDay(t time.Time) string {
 	return t.Format(dayFormat)
+}
+
+// Day returns a pretty string for the day, i.e. "Today" or "Monday" or "5/25".
+func Day(t time.Time) string {
+	if Today(t) {
+		return "Today"
+	} else if Tomorrow(t) {
+		return "Tomorrow"
+	} else if WithinWeek(t) {
+		return t.Weekday().String()
+	} else {
+		return t.Format(dayFmt)
+	}
 }

@@ -30,10 +30,15 @@ const (
 func Register(r *mux.Router, prefix string) {
 	dataDir := getDataDir()
 
-	r.Handle("/", makeIndexHandler())
+	indexHandler := makeIndexHandler()
+	r.HandleFunc("/", serverSideIndex)
+	r.Handle("/api/v1/index", indexHandler)
 	r.HandleFunc("/api/v1/goodtimes", serveGoodTimes)
+
+	r.HandleFunc("/api/v2/index", serverSideIndex)
 	r.HandleFunc("/api/v2/goodtimes", serveGoodTimes2)
 	r.HandleFunc("/api/v2/tide_image", serveTideImage)
+
 	r.PathPrefix("/static/").Handler(http.StripPrefix(prefix, http.FileServer(http.Dir(dataDir))))
 }
 

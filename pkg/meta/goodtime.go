@@ -32,16 +32,7 @@ func (gt *GoodTime) String() string {
 }
 
 func (gt *GoodTime) prettyTime() string {
-	var day string
-	if timetricks.Today(gt.Time) {
-		day = "Today"
-	} else if timetricks.Tomorrow(gt.Time) {
-		day = "Tomorrow"
-	} else if timetricks.WithinWeek(gt.Time) {
-		day = gt.Time.Weekday().String()
-	} else {
-		day = gt.Time.Format(dayFmt)
-	}
+	day := timetricks.Day(gt.Time)
 
 	until := ""
 	if gt.Duration != 0 {
@@ -54,11 +45,26 @@ func (gt *GoodTime) prettyTime() string {
 		until)
 }
 
-func (gt *GoodTime) MarshalJSON() ([]byte, error) {
-	// Fill in pretty time if needed.
+// UpdatePrettyTime makes sure that the good time's pretty time is set.
+func (gt *GoodTime) UpdatePrettyTime() {
 	if gt.PrettyTime == "" {
 		gt.PrettyTime = gt.prettyTime()
 	}
+}
+
+// TimeRange returns a time range for the goodtime, similar to PrettyTime
+// without the date.
+func (gt *GoodTime) TimeRange() string {
+	until := ""
+	if gt.Duration != 0 {
+		until = fmt.Sprintf(" until %s", gt.Time.Add(gt.Duration).Format(timeFmt))
+	}
+	return fmt.Sprintf("%s%s", gt.Time.Format(timeFmt), until)
+}
+
+func (gt *GoodTime) MarshalJSON() ([]byte, error) {
+	// Fill in pretty time if needed.
+	gt.UpdatePrettyTime()
 	// Dereference is necessary to avoid infinite loop; this method
 	// only has pointer receiver.
 	return json.Marshal(*gt)
