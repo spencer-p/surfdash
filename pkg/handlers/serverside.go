@@ -44,9 +44,10 @@ func serverSideIndex(w http.ResponseWriter, r *http.Request) {
 
 	// Compute sun events, goodtimes, and set up tide images.
 	sunevents := sunset.GetSunEvents(time.Now(), query.Duration, sunset.SantaCruz)
-	// TODO(spencer-p) Truncate the good times predictions to account for the
+	// Truncate the good times predictions to account for the
 	// extra data data from above.
-	goodTimes := meta.GoodTimes2(meta.Conditions{preds, sunevents})
+	trimIndex := lastIndexBefore(preds, timetricks.TrimClock(time.Now().Add(forecastLength)))
+	goodTimes := meta.GoodTimes2(meta.Conditions{preds[:trimIndex+1], sunevents})
 	tideimages := visualize.NewTidal(preds, sunevents)
 
 	presElems := make([]PresentationElement, len(goodTimes))
@@ -71,4 +72,26 @@ func imgToString(img *visualize.Tidal, t time.Time) string {
 	var b bytes.Buffer
 	img.Encode(&b)
 	return b.String()
+}
+
+// TODO(spencer-p) Standardize these scattered binary search functions.
+func lastIndexBefore(preds noaa.Predictions, t time.Time) int {
+	left, right := 0, len(preds)
+	for right-left > 1 {
+		mid := (left + right) / 2
+		midt := preds[mid].T()
+		if midt.Before(t) {
+			left = mid
+		} else if midt.After(t) {
+			right = mid
+		} else if midt.Equal(t) {
+			return mid
+		}
+	}
+	ok := left < len(preds)
+	if !ok {
+		// Nothing found, just return last element
+		return len(preds) - 1
+	}
+	return left
 }
