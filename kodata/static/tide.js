@@ -48,8 +48,7 @@ function updateGraph(svg, x, y) {
 	let pretty_time = dateFormatter.format(abs_t*1000);
 
 	let tt = gettooltip(svg);
-	tt.innerHTML = "tide is " + tideHeight.toFixed(1) + " ft at " + pretty_time;
-	tt.hidden = false;
+	tt.innerText = "tide is " + tideHeight.toFixed(1) + " ft at " + pretty_time;
 
 	let dot = getdot(svg);
 	dot.setAttribute("cx", x);

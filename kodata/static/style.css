@@ -98,6 +98,14 @@ h1 {
 	fill-opacity: 100%;
 }
 
+.tooltip {
+	display: none;
+}
+
+.goodtime_glance:active, .goodtime_glance:hover .tooltip {
+	display: list-item;
+}
+
 .content {
 	margin: 0px;
 }
