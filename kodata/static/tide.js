@@ -1,31 +1,34 @@
 var dateFormatter = new Intl.DateTimeFormat('en-US', { hour: "numeric", minute: "numeric" });
 
-for (svg of document.querySelectorAll("svg")) {
+for (hoverEl of document.querySelectorAll(".goodtime_glance")) {
 	// Hack to make iOS call mouse move.
-	svg.addEventListener("touchstart", ev => {}, {passive: true});
+	hoverEl.addEventListener("touchstart", ev => {}, {passive: true});
 
 	// Handlers for touch or mouse.
-	svg.addEventListener("mousemove", svgMove, {passive: true});
-	svg.addEventListener("touchmove", touchMove, {passive: true});
+	hoverEl.addEventListener("mousemove", svgMove, {capture: true, passive: true});
+	hoverEl.addEventListener("touchmove", touchMove, {capture: true, passive: true});
 }
 
 
 function svgMove(ev) {
-	let svg = ev.target;
-	while (svg.tagName !== "svg") {
-		svg = svg.parentElement;
-	}
+	let svg = findSVG(ev.target);
 
 	updateGraph(svg, ev.clientX, ev.clientY);
 }
 
 function touchMove(ev) {
-	let svg = ev.target;
-	while (svg.tagName !== "svg") {
-		svg = svg.parentElement;
-	}
+	let svg = findSVG(ev.target);
 
 	updateGraph(svg, ev.touches[0].clientX, ev.touches[0].clientY);
+}
+
+// findSVG looks for the closest svg in the DOM to SVG.
+function findSVG(el) {
+	let svg = el.querySelector("svg");
+	if (!svg) {
+		return findSVG(el.parentElement);
+	}
+	return svg;
 }
 
 function updateGraph(svg, x, y) {

@@ -94,7 +94,7 @@ h1 {
 	transition: fill-opacity 0.2s;
 }
 
-svg:active, svg:hover .dot {
+.goodtime_glance:active, .goodtime_glance:hover .dot {
 	fill-opacity: 100%;
 }
 
