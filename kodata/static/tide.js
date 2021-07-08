@@ -29,11 +29,11 @@ function touchMove(ev) {
 }
 
 function updateGraph(svg, x, y) {
-    // The cursor point, translated into svg coordinates
+	// The cursor point, translated into svg coordinates
 	var pt = svg.createSVGPoint();
 	pt.x = x;
-    pt.y = y;
-    var cursorpt =  pt.matrixTransform(svg.getScreenCTM().inverse());
+	pt.y = y;
+	var cursorpt =  pt.matrixTransform(svg.getScreenCTM().inverse());
 	x = cursorpt.x;
 	y = cursorpt.y;
 
