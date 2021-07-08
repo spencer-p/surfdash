@@ -6,6 +6,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>Surfdash</title>
 		<link rel="stylesheet" href="static/style.css" />
+		<script src="static/tide.js" defer></script>
 	</head>
 	<body>
 		<div class="content">
@@ -20,6 +21,7 @@
 							<span class="goodtime_time">{{ .GoodTime.TimeRange }}</span>
 							<div class="goodtime_detail">
 								<ul>
+									<li class="tooltip" hidden></li>
 									{{ range .GoodTime.Reasons }}
 									<li>
 										{{ . }}

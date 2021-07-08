@@ -1,11 +1,13 @@
 package visualize
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"time"
 
 	"github.com/spencer-p/surfdash/pkg/noaa"
+	"github.com/spencer-p/surfdash/pkg/noaa/splines"
 	"github.com/spencer-p/surfdash/pkg/sunset"
 	"github.com/spencer-p/surfdash/pkg/timetricks"
 )
@@ -42,7 +44,7 @@ func (img *Tidal) Encode(w io.Writer) (int, error) {
 		}
 	}
 
-	io(fmt.Fprintf(w, `<svg viewBox="0 0 %d %d" xmlns="http://www.w3.org/2000/svg">`, width, height))
+	io(fmt.Fprintf(w, `<svg viewBox="0 0 %d %d" onclick="" xmlns="http://www.w3.org/2000/svg">`, width, height))
 
 	// Calculate dawn/dusk and draw the sunshine.
 	sunupIndex, ok := img.sunup(img.date)
@@ -74,6 +76,7 @@ func (img *Tidal) Encode(w io.Writer) (int, error) {
 	if !ok {
 		i = 0
 	}
+	startPredI, endPredI := i, i
 
 	for ; i+1 < len(img.tidePreds); i += 1 {
 		x1 := img.timeToX(img.tidePreds[i].T())
@@ -81,6 +84,7 @@ func (img *Tidal) Encode(w io.Writer) (int, error) {
 		if int(x1) > width {
 			break
 		}
+		endPredI = i + 1
 		io(fmt.Fprintf(w, `<path class="tide" fill="skyblue" d="M %d,%d `, x1, y1))
 
 		x2 := img.timeToX(img.tidePreds[i+1].T()) + 1 // +1 to create overlap
@@ -104,6 +108,16 @@ func (img *Tidal) Encode(w io.Writer) (int, error) {
 	io(fmt.Fprintf(w, `<rect class="night" fill="blue" fill-opacity="25%%" x="%d" y="%d" width="%d" height="%d"/>`,
 		setx, 0,
 		width-setx, height))
+
+	// Insert spline data as JSON.
+	splinePreds := img.tidePreds[startPredI : endPredI+1]
+	spline := splines.CurvesBetween(splinePreds)
+	io(fmt.Fprintf(w, `<text class="spline" visibility="hidden">`))
+	json.NewEncoder(w).Encode(spline)
+	io(fmt.Fprintf(w, `</text>`))
+
+	// Insert date of this graph as unix.
+	io(fmt.Fprintf(w, `<text class="unixtime" visibility="hidden">%d</text>`, img.date.Unix()))
 
 	io(fmt.Fprintf(w, `</svg>`))
 
@@ -137,7 +151,7 @@ func (img *Tidal) sunup(t time.Time) (int, bool) {
 }
 
 func tideHeightToY(tideHeight noaa.Height) int {
-	return height - int((tideHeight+2)*(height/10)) // scaling ratio of 200 units to 10 feet of tide variance
+	return height - int((tideHeight+2)*(height/10)) // scaling ratio of img height to 10 feet of tide variance
 }
 
 func (img *Tidal) timeToX(t time.Time) int {

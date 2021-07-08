@@ -2,6 +2,8 @@
 package splines
 
 import (
+	"bytes"
+	"fmt"
 	"math"
 	"time"
 
@@ -102,4 +104,12 @@ func (c Curve) Eval(t time.Time) float64 {
 // the "origin" (just the start of a particular curve).
 func xrel(origin time.Time, t time.Time) float64 {
 	return float64(t.Unix() - origin.Unix())
+}
+
+func (c Curve) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	_, err := fmt.Fprintf(&buf, `{"start":%d,"end":%d,"a":%g,"b":%g,"c":%g,"d":%g}`,
+		c.Start.Unix(), c.End.Unix(),
+		c.a, c.b, c.c, c.d)
+	return buf.Bytes(), err
 }

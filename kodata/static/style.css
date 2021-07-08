@@ -2,6 +2,7 @@
 	--base-color: #708090;
 	--base-color-light: #e9ecee;
 	--base-color-dark: #2b3238;
+	--always-dark: #2b3238;
 
 	--accent-yellow: lightyellow;
 	--accent-night: #2b3238;
@@ -11,6 +12,8 @@
 	--accent-tide-dark: #e9c46a;
 
 	--accent-tide-graph: #71c5e7;
+
+	--padding: 0.5em;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -44,7 +47,7 @@ h1 {
 }
 
 .date {
-	padding: 1em;
+	padding: var(--padding);
 	writing-mode: vertical-rl;
 }
 
@@ -58,7 +61,7 @@ h1 {
 }
 
 .goodtime_text {
-	padding: 1em;
+	padding: var(--padding);
 }
 
 .night {
@@ -86,6 +89,15 @@ h1 {
 	fill: var(--accent-tide-graph);
 }
 
+.dot {
+	fill: var(--always-dark);
+	transition: fill-opacity 0.2s;
+}
+
+svg:active, svg:hover .dot {
+	fill-opacity: 100%;
+}
+
 .content {
 	margin: 0px;
 }
@@ -99,6 +111,10 @@ a {
 }
 
 @media (min-width: 600px) {
+	:root {
+		--padding: 1em;
+	}
+
 	.content {
 		max-width: 600px;
 		margin: auto;
