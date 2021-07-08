@@ -2,11 +2,11 @@ var dateFormatter = new Intl.DateTimeFormat('en-US', { hour: "numeric", minute: 
 
 for (svg of document.querySelectorAll("svg")) {
 	// Hack to make iOS call mouse move.
-	svg.addEventListener("touchstart", ev => {});
+	svg.addEventListener("touchstart", ev => {}, {passive: true});
 
 	// Handlers for touch or mouse.
-	svg.addEventListener("mousemove", svgMove);
-	svg.addEventListener("touchmove", touchMove, false);
+	svg.addEventListener("mousemove", svgMove, {passive: true});
+	svg.addEventListener("touchmove", touchMove, {passive: true});
 }
 
 
