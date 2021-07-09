@@ -102,8 +102,13 @@ h1 {
 	display: none;
 }
 
+.goodtime_glance:active, .goodtime_glance:hover .tooltip:empty {
+	/* Prevent the tooltip from being shown before the text is filled. */
+	display: none;
+}
+
 .goodtime_glance:active, .goodtime_glance:hover .tooltip {
-	display: list-item;
+	display: revert;
 }
 
 .content {
