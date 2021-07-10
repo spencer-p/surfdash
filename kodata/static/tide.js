@@ -48,7 +48,7 @@ function updateGraph(svg, x, y) {
 	let pretty_time = dateFormatter.format(abs_t*1000);
 
 	let tt = gettooltip(svg);
-	tt.innerText = "tide is " + tideHeight.toFixed(1) + " ft at " + pretty_time;
+	tt.innerText = "tide is " + tideHeight.toFixed(1) + "ft at " + pretty_time;
 
 	let dot = getdot(svg);
 	let doty = svgTideY(svg, x);
@@ -114,7 +114,8 @@ function svgTideY(svg, x) {
 	let allCurves = Array.from(svg.querySelectorAll(".tide")).map(tideControlPoints);
 	for (curve of allCurves) {
 		if (curve.points[0].x <= x && x <= curve.points[3].x) {
-			return bezierYFromX(curve, x);
+			// return bezierYFromX(curve, x);
+			return binaryBezierYFromX(curve, x);
 		}
 	}
 	return NaN;
@@ -143,7 +144,33 @@ function bezierYFromX(curve, x) {
 		- (imgRect.height - curve.points[3].y) // Right edge.
 		- (curve.points[3].x - curve.points[0].x)); // Bottom edge.
 	t *= length;
-	return curve.path.getPointAtLength(t).y;
+	let pt = curve.path.getPointAtLength(t);
+	console.log("delta is", pt.x-x);
+	return pt.y;
+}
+
+function binaryBezierYFromX(curve, x) {
+	const imgRect = curve.path.parentElement.viewBox.baseVal
+	let length = (curve.path.getTotalLength()
+		- (imgRect.height - curve.points[0].y) // Left edge.
+		- (imgRect.height - curve.points[3].y) // Right edge.
+		- (curve.points[3].x - curve.points[0].x)); // Bottom edge.
+	let min = 0;
+	let max = length;
+	let guess = min + ((max-min)/2);
+	let pt = curve.path.getPointAtLength(guess);
+	const thresh = 1;
+	while (Math.abs(pt.x - x) > thresh) {
+		if (pt.x > x) {
+			max = guess;
+		} else {
+			min = guess;
+		}
+		guess = min + ((max-min)/2);
+		pt = curve.path.getPointAtLength(guess);
+	}
+
+	return pt.y;
 }
 
 const pi = Math.PI,
