@@ -146,16 +146,14 @@ func GoodTimes2(c Conditions) []GoodTime {
 		low := math.MaxFloat64
 		var lowt time.Time
 		for ; t.Before(tend); t = t.Add(step) {
+			// If no low tide, bail.
 			tideHeight := spl.Eval(t)
-			var (
-				sunup = c.SunEvents.SunUp(t)
-				dawn  = c.SunEvents.Dawn(t)
-				dusk  = c.SunEvents.Dusk(t)
-			)
-			// If no low tide or sun, bail.
 			if tideHeight > smallTideThresh {
 				break
-			} else if !(sunup || dawn || dusk) {
+			}
+
+			// If the sun won't be shining, bail.
+			if light := c.SunEvents.SunUp(t) || c.SunEvents.Dawn(t) || c.SunEvents.Dusk(t); !light {
 				break
 			}
 

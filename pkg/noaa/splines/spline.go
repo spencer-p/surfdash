@@ -77,18 +77,19 @@ func curveBetween(time1 time.Time, h1 float64, time2 time.Time, h2 float64) Curv
 
 func (s Spline) Eval(t time.Time) float64 {
 	n := len(s)
-	if n == 0 {
-		// Function not defined at this time.
-		return math.NaN()
+	left, right := 0, n
+	for right > left {
+		mid := left + (right-left)/2
+		if t.Before(s[mid].Start) {
+			right = mid
+		} else if t.After(s[mid].End) {
+			left = mid
+		} else {
+			return s[mid].Eval(t)
+		}
 	}
-	mid := n / 2
-	if t.Before(s[mid].Start) {
-		return s[:mid].Eval(t)
-	} else if t.After(s[mid].End) {
-		return s[mid+1:].Eval(t)
-	} else {
-		return s[mid].Eval(t)
-	}
+	// Function not defined.
+	return math.NaN()
 }
 
 func (c Curve) Eval(t time.Time) float64 {
@@ -96,7 +97,7 @@ func (c Curve) Eval(t time.Time) float64 {
 		return math.NaN()
 	}
 	x := xrel(c.Start, t)
-	return c.a*math.Pow(x, 3) + c.b*math.Pow(x, 2) + c.c*x + c.d
+	return c.a*x*x*x + c.b*x*x + c.c*x + c.d
 }
 
 // xrel computes an x coordinate for t that is relative to origin.

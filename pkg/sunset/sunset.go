@@ -45,28 +45,28 @@ func getDays(t time.Duration) int {
 // If the SunEvents provided cannot say, it returns false.
 func (evs SunEvents) SunUp(t time.Time) bool {
 	n := len(evs)
-	if n <= 1 {
-		return false
-	}
-	// evs[mid] and evs[mid-1] are defined because there are at least two
-	// elements.
-	mid := n / 2
-	if t.After(evs[mid-1].Time) && t.Before(evs[mid].Time) {
-		// Check if t falls between mid-1 and mid.
-		// If those events are rise and set, sun is up.
-		if evs[mid-1].Event == Sunrise &&
-			evs[mid].Event == Sunset {
-			return true
+	left, right := 0, n
+	// There must always be two elements (after rise and post set) to consider.
+	for right-left >= 2 {
+		// evs[mid] and evs[mid-1] are defined because there are at least two
+		// elements.
+		mid := left + (right-left)/2
+		if t.After(evs[mid-1].Time) && t.Before(evs[mid].Time) {
+			// Check if t falls between mid-1 and mid.
+			// If those events are rise and set, sun is up.
+			if evs[mid-1].Event == Sunrise &&
+				evs[mid].Event == Sunset {
+				return true
+			} else {
+				return false
+			}
+		} else if t.Before(evs[mid-1].Time) {
+			right = mid
 		} else {
-			return false
+			left = mid
 		}
-	} else if t.Before(evs[mid-1].Time) {
-		// Search range of start to mid-1.
-		return evs[:mid].SunUp(t)
-	} else {
-		// Search range of mid to end.
-		return evs[mid:].SunUp(t)
 	}
+	return false
 }
 
 // Dawn returns true if t is just before or at dawn.
