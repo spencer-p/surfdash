@@ -16,6 +16,11 @@ import (
 	"github.com/spencer-p/surfdash/pkg/visualize"
 )
 
+type TemplateInput struct {
+	PresentationElements []PresentationElement
+	NextStart            string
+}
+
 type PresentationElement struct {
 	Date      string
 	GoodTime  meta.GoodTime
@@ -26,10 +31,21 @@ var indexTemplate = template.Must(template.ParseFiles(path.Join(getDataDir(), "s
 
 // serverSideIndex serves a good times page fully rendered on the server.
 func serverSideIndex(w http.ResponseWriter, r *http.Request) {
+	date := time.Now()
+	startString := r.FormValue("start")
+	if startString != "" {
+		parsed, err := time.Parse(time.RFC3339, startString)
+		if err != nil {
+			log.Printf("Failed to read time %q: %v", date, err)
+		} else {
+			date = parsed
+		}
+	}
+
 	// Fetch tide data first.
 	query := noaa.PredictionQuery{
 		// Add extra padding of one day around tides to fill in gaps.
-		Start:    time.Now().Add(-1 * 24 * time.Hour),
+		Start:    date.Add(-1 * 24 * time.Hour),
 		Duration: forecastLength + 24*time.Hour,
 		Station:  noaa.SantaCruz,
 	}
@@ -43,10 +59,10 @@ func serverSideIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Compute sun events, goodtimes, and set up tide images.
-	sunevents := sunset.GetSunEvents(time.Now(), query.Duration, sunset.SantaCruz)
+	sunevents := sunset.GetSunEvents(date, query.Duration, sunset.SantaCruz)
 	// Truncate the good times predictions to account for the
 	// extra data data from above.
-	trimIndex := lastIndexBefore(preds, timetricks.TrimClock(time.Now().Add(forecastLength)))
+	trimIndex := lastIndexBefore(preds, timetricks.TrimClock(date.Add(forecastLength)))
 	goodTimes := meta.GoodTimes2(meta.Conditions{preds[:trimIndex+1], sunevents})
 	tideimages := visualize.NewTidal(preds, sunevents)
 
@@ -60,9 +76,14 @@ func serverSideIndex(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	tinput := TemplateInput{
+		PresentationElements: presElems,
+		NextStart:            date.Add(forecastLength).Format(time.RFC3339),
+	}
+
 	w.Header().Add("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
-	if err := indexTemplate.Execute(w, presElems); err != nil {
+	if err := indexTemplate.Execute(w, tinput); err != nil {
 		log.Printf("Failed to execute template: %v", err)
 	}
 }
