@@ -119,6 +119,10 @@ h1 {
 	text-align: right;
 }
 
+.footer, p {
+	text-align: right;
+}
+
 a {
 	color: var(--accent-tide-graph);
 }
