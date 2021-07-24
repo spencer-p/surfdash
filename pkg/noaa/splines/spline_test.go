@@ -45,10 +45,10 @@ func ExampleSolve() {
 		Height: 10,
 	}}
 	curve := CurvesBetween(preds)[0]
-	fmt.Printf("A = %.2f\n", curve.A)
-	fmt.Printf("B = %.2f\n", curve.B)
-	fmt.Printf("C = %.2f\n", curve.C)
-	fmt.Printf("D = %.2f\n", curve.D)
+	fmt.Printf("A = %.2f\n", curve.a)
+	fmt.Printf("B = %.2f\n", curve.b)
+	fmt.Printf("C = %.2f\n", curve.c)
+	fmt.Printf("D = %.2f\n", curve.d)
 	// Output:
 	// A = -0.02
 	// B = 0.30
