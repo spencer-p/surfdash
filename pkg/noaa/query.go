@@ -39,6 +39,18 @@ func GetPredictions(q *PredictionQuery) (Predictions, error) {
 		}
 		defer resp.Body.Close()
 
+		// Check for an HTTP error that might prevent decoding.
+		if resp.StatusCode != http.StatusOK {
+			// If we got a 5xx error code, we'll attempt to dump the error.
+			// Otherwise we'll just report the status code and text.
+			if resp.StatusCode >= 500 && resp.StatusCode < 600 {
+				buf := new(bytes.Buffer)
+				io.Copy(buf, resp.Body)
+				return Predictions{}, fmt.Errorf("HTTP %s: %s", resp.Status, buf.String())
+			}
+			return Predictions{}, fmt.Errorf("HTTP %s", resp.Status)
+		}
+
 		// Read the full response to a buffer for parsing and caching.
 		buf := new(bytes.Buffer)
 		if _, err := io.Copy(buf, resp.Body); err != nil {
