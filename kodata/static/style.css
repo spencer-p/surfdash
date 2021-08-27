@@ -119,7 +119,7 @@ h1 {
 	text-align: right;
 }
 
-.footer, p {
+.footer > p {
 	text-align: right;
 }
 
