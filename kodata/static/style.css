@@ -14,6 +14,7 @@
 	--accent-tide-graph: #71c5e7;
 
 	--padding: 0.5em;
+	--small-padding: 0.25em;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -58,6 +59,22 @@ h1 {
 
 .goodtime_glance {
 	width: 100%;
+}
+
+.goodtime_time:before {
+	content: "⭐";
+	color: transparent;
+	text-shadow: 0 0 0 var(--accent-yellow);
+	padding-right: var(--small-padding);
+}
+
+.goodtime_time {
+	background-color: var(--base-color);
+	color: var(--base-color-light);
+	border: 3px solid var(--base-color);
+	border-radius: 3px;
+	padding: var(--small-padding);
+	padding-bottom: calc(var(--small-padding)/2);
 }
 
 .goodtime_text {
@@ -130,6 +147,7 @@ a {
 @media (min-width: 600px) {
 	:root {
 		--padding: 1em;
+		--small-padding: 0.5em;
 	}
 
 	.content {
