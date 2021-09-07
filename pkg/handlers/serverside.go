@@ -23,7 +23,7 @@ type TemplateInput struct {
 
 type PresentationElement struct {
 	Date      string
-	GoodTime  meta.GoodTime
+	GoodTimes []meta.GoodTime
 	TideImage template.HTML
 }
 
@@ -66,15 +66,7 @@ func serverSideIndex(w http.ResponseWriter, r *http.Request) {
 	goodTimes := meta.GoodTimes2(meta.Conditions{preds[:trimIndex+1], sunevents})
 	tideimages := visualize.NewTidal(preds, sunevents)
 
-	presElems := make([]PresentationElement, len(goodTimes))
-	for i := range goodTimes {
-		goodTimes[i].UpdatePrettyTime()
-		presElems[i] = PresentationElement{
-			Date:      timetricks.Day(goodTimes[i].Time),
-			GoodTime:  goodTimes[i],
-			TideImage: template.HTML(imgToString(tideimages, goodTimes[i].Time)),
-		}
-	}
+	presElems := goodTimesToPresentationElements(tideimages, goodTimes)
 
 	tinput := TemplateInput{
 		PresentationElements: presElems,
@@ -115,4 +107,34 @@ func lastIndexBefore(preds noaa.Predictions, t time.Time) int {
 		return len(preds) - 1
 	}
 	return left
+}
+
+func goodTimesToPresentationElements(tideimages *visualize.Tidal, goodTimes []meta.GoodTime) []PresentationElement {
+	var f func(result []PresentationElement, goodTimes []meta.GoodTime) []PresentationElement
+	f = func(result []PresentationElement, goodTimes []meta.GoodTime) []PresentationElement {
+		if len(goodTimes) == 0 {
+			return result
+		}
+
+		resultLen := len(result)
+		gt := goodTimes[0]
+		gt.UpdatePrettyTime()
+
+		if len(result) != 0 && result[resultLen-1].Date == timetricks.Day(gt.Time) {
+			// There is already an entry in the result that corresponds to the
+			// same day as the next time we're entering.
+			result[resultLen-1].GoodTimes = append(result[resultLen-1].GoodTimes, gt)
+		} else {
+			// Normal case.
+			result = append(result, PresentationElement{
+				Date:      timetricks.Day(gt.Time),
+				GoodTimes: []meta.GoodTime{gt},
+				TideImage: template.HTML(imgToString(tideimages, gt.Time)),
+			})
+		}
+
+		return f(result, goodTimes[1:])
+	}
+
+	return f(nil, goodTimes)
 }
