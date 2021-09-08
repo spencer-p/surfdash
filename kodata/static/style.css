@@ -117,6 +117,8 @@ h1 {
 
 .tooltip {
 	display: none;
+	margin: auto;
+	margin-bottom: var(--padding);
 }
 
 .goodtime_glance:active, .goodtime_glance:hover .tooltip:empty {
@@ -129,7 +131,7 @@ h1 {
 }
 
 .content {
-	margin: 0px;
+	margin: auto;
 }
 
 .footer {

@@ -20,11 +20,11 @@
 					<div class="goodtime_glance">
 						{{ .TideImage }}
 						<div class="goodtime_text">
+							<p class="tooltip"></p>
 							{{ range .GoodTimes }}
 							<span class="goodtime_time">{{ .TimeRange }}</span>
 							<div class="goodtime_detail">
 								<ul>
-									<li class="tooltip"></li>
 									{{ range .Reasons }}
 									<li>
 										{{ . }}
