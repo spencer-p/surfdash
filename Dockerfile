@@ -12,5 +12,6 @@ COPY --from=builder /go/bin/surfdash /app
 COPY kodata /kodata
 
 ENV KO_DATA_PATH=/kodata
+ENV TZ=America/Los_Angeles
 EXPOSE 8080
 CMD ["/app"]
