@@ -1,11 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/spencer-p/surfdash/pkg/handlers"
@@ -26,8 +23,6 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	L()
-
 	r := mux.NewRouter().StrictSlash(true)
 	r.Use(helpttp.WithLog)
 	s := r.PathPrefix(env.Prefix).Subrouter()
@@ -45,19 +40,4 @@ func main() {
 	}
 	log.Printf("Listening and serving on %s/%s", srv.Addr, env.Prefix[1:])
 	log.Fatal(srv.ListenAndServe())
-}
-
-func L() {
-	var files []string
-
-	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-		files = append(files, path)
-		return nil
-	})
-	if err != nil {
-		panic(err)
-	}
-	for _, file := range files {
-		fmt.Println(file)
-	}
 }
