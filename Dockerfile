@@ -4,7 +4,7 @@ WORKDIR /go/src/github.com/spencer-p/surfdash
 COPY ["go.mod", "go.sum", "./"]
 RUN go mod download
 
-COPY * ./
+COPY . ./
 RUN CGO_ENABLED=0 go install .
 
 FROM gcr.io/distroless/static-debian11
