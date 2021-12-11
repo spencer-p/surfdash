@@ -36,7 +36,7 @@ func serverSideIndex(w http.ResponseWriter, r *http.Request) {
 	if startString != "" {
 		parsed, err := time.Parse(time.RFC3339, startString)
 		if err != nil {
-			log.Printf("Failed to read time %q: %v", date, err)
+			log.Printf("Failed to read time %q: %v", startString, err)
 		} else {
 			date = parsed
 		}
