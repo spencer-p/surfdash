@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/spencer-p/surfdash/pkg/handlers"
+	"github.com/spencer-p/surfdash/pkg/metrics"
 
 	"github.com/gorilla/mux"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spencer-p/helpttp"
 )
 
@@ -25,7 +27,9 @@ func main() {
 
 	r := mux.NewRouter().StrictSlash(true)
 	r.Use(helpttp.WithLog)
+	r.Use(metrics.LatencyHandler)
 	s := r.PathPrefix(env.Prefix).Subrouter()
+	s.Handle("/metrics", promhttp.Handler())
 	handlers.Register(s, env.Prefix)
 
 	if env.Prefix != "/" {

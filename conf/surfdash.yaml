@@ -47,10 +47,32 @@ apiVersion: v1
 kind: Service
 metadata:
   name: surfdash
+  labels:
+    app: surfdash
 spec:
   selector:
     app: surfdash
   ports:
     - protocol: TCP
+      name: http
       port: 8080
       targetPort: 8080
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: surfdash
+  namespace: monitoring
+  labels:
+    app: surfdash
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: surfdash
+  namespaceSelector:
+    matchNames:
+    - default
+  jobLabel: component
+  endpoints:
+  - port: http
