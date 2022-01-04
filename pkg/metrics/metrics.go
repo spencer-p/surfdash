@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
