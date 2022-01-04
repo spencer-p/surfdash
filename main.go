@@ -15,8 +15,9 @@ import (
 )
 
 type Config struct {
-	Port   string `default:"8080"`
-	Prefix string `default:"/"`
+	Port        string `default:"8080"`
+	MetricsPort string `default:"8081"`
+	Prefix      string `default:"/"`
 }
 
 func main() {
@@ -29,12 +30,22 @@ func main() {
 	r.Use(helpttp.WithLog)
 	r.Use(metrics.LatencyHandler)
 	s := r.PathPrefix(env.Prefix).Subrouter()
-	s.Handle("/metrics", promhttp.Handler())
 	handlers.Register(s, env.Prefix)
 
 	if env.Prefix != "/" {
 		r.Handle("/", http.RedirectHandler(env.Prefix, http.StatusFound))
 	}
+
+	metricsSrv := &http.Server{
+		Handler:      promhttp.Handler(),
+		Addr:         "0.0.0.0:" + env.MetricsPort,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+	go func() {
+		log.Printf("Listening and serving metrics on %s", metricsSrv.Addr)
+		log.Fatal(metricsSrv.ListenAndServe())
+	}()
 
 	srv := &http.Server{
 		Handler:      r,

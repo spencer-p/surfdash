@@ -43,12 +43,6 @@ func LatencyHandler(next http.Handler) http.Handler {
 			path = r.URL.Path
 		}
 
-		// Ignore the metrics handler itself.
-		if strings.HasSuffix(r.URL.Path, "metrics") {
-			next.ServeHTTP(w, r)
-			return
-		}
-
 		// Defer metric observing. Any panics in next are reported as 500 errors
 		// and then re-thrown.
 		defer func() {
