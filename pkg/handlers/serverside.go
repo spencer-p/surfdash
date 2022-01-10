@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
-	"path"
 	"time"
 
 	"github.com/spencer-p/surfdash/pkg/meta"
@@ -27,57 +27,59 @@ type PresentationElement struct {
 	TideImage template.HTML
 }
 
-var indexTemplate = template.Must(template.ParseFiles(path.Join(getDataDir(), "static", "index.template.html")))
-
 // serverSideIndex serves a good times page fully rendered on the server.
-func serverSideIndex(w http.ResponseWriter, r *http.Request) {
-	date := time.Now()
-	startString := r.FormValue("start")
-	if startString != "" {
-		parsed, err := time.Parse(time.RFC3339, startString)
-		if err != nil {
-			log.Printf("Failed to read time %q: %v", startString, err)
-		} else {
-			date = parsed
+func makeServerSideIndex(content embed.FS) http.HandlerFunc {
+	var indexTemplate = template.Must(template.ParseFS(content, "static/index.template.html"))
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		date := time.Now()
+		startString := r.FormValue("start")
+		if startString != "" {
+			parsed, err := time.Parse(time.RFC3339, startString)
+			if err != nil {
+				log.Printf("Failed to read time %q: %v", startString, err)
+			} else {
+				date = parsed
+			}
 		}
-	}
 
-	// Fetch tide data first.
-	query := noaa.PredictionQuery{
-		// Add extra padding of one day around tides to fill in gaps.
-		Start:    date.Add(-1 * 24 * time.Hour),
-		Duration: forecastLength + 24*time.Hour,
-		Station:  noaa.SantaCruz,
-	}
-	preds, err := noaa.GetPredictions(&query)
-	if err != nil {
-		err := fmt.Errorf("failed to fetch from NOAA: %w", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Failed to fetch good times: %+v", err)
-		log.Printf("Failed to fetch good times: %+v", err)
-		return
-	}
+		// Fetch tide data first.
+		query := noaa.PredictionQuery{
+			// Add extra padding of one day around tides to fill in gaps.
+			Start:    date.Add(-1 * 24 * time.Hour),
+			Duration: forecastLength + 24*time.Hour,
+			Station:  noaa.SantaCruz,
+		}
+		preds, err := noaa.GetPredictions(&query)
+		if err != nil {
+			err := fmt.Errorf("failed to fetch from NOAA: %w", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, "Failed to fetch good times: %+v", err)
+			log.Printf("Failed to fetch good times: %+v", err)
+			return
+		}
 
-	// Compute sun events, goodtimes, and set up tide images.
-	sunevents := sunset.GetSunEvents(date, query.Duration, sunset.SantaCruz)
-	// Truncate the good times predictions to account for the
-	// extra data data from above.
-	trimIndex := lastIndexBefore(preds, timetricks.TrimClock(date.Add(forecastLength)))
-	goodTimes := meta.GoodTimes2(meta.Conditions{preds[:trimIndex+1], sunevents})
-	tideimages := visualize.NewTidal(preds, sunevents)
+		// Compute sun events, goodtimes, and set up tide images.
+		sunevents := sunset.GetSunEvents(date, query.Duration, sunset.SantaCruz)
+		// Truncate the good times predictions to account for the
+		// extra data data from above.
+		trimIndex := lastIndexBefore(preds, timetricks.TrimClock(date.Add(forecastLength)))
+		goodTimes := meta.GoodTimes2(meta.Conditions{preds[:trimIndex+1], sunevents})
+		tideimages := visualize.NewTidal(preds, sunevents)
 
-	presElems := goodTimesToPresentationElements(tideimages, goodTimes)
+		presElems := goodTimesToPresentationElements(tideimages, goodTimes)
 
-	tinput := TemplateInput{
-		PresentationElements: presElems,
-		NextStart:            date.Add(forecastLength).Format(time.RFC3339),
-	}
+		tinput := TemplateInput{
+			PresentationElements: presElems,
+			NextStart:            date.Add(forecastLength).Format(time.RFC3339),
+		}
 
-	w.Header().Add("Content-Type", "text/html")
-	w.WriteHeader(http.StatusOK)
-	if err := indexTemplate.Execute(w, tinput); err != nil {
-		log.Printf("Failed to execute template: %v", err)
-	}
+		w.Header().Add("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		if err := indexTemplate.Execute(w, tinput); err != nil {
+			log.Printf("Failed to execute template: %v", err)
+		}
+	})
 }
 
 func imgToString(img *visualize.Tidal, t time.Time) string {

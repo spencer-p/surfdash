@@ -1,6 +1,8 @@
 package main
 
 import (
+	"embed"
+	"io/fs"
 	"log"
 	"net/http"
 	"time"
@@ -13,6 +15,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spencer-p/helpttp"
 )
+
+//go:embed static
+var staticContent embed.FS
 
 type Config struct {
 	Port        string `default:"8080"`
@@ -30,7 +35,7 @@ func main() {
 	r.Use(helpttp.WithLog)
 	r.Use(metrics.LatencyHandler)
 	s := r.PathPrefix(env.Prefix).Subrouter()
-	handlers.Register(s, env.Prefix)
+	handlers.Register(s, env.Prefix, staticContent)
 
 	if env.Prefix != "/" {
 		r.Handle("/", http.RedirectHandler(env.Prefix, http.StatusFound))

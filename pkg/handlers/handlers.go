@@ -1,12 +1,12 @@
 package handlers
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
-	"os"
-	"path"
 	"time"
 
 	"github.com/spencer-p/surfdash/pkg/cache"
@@ -23,31 +23,19 @@ const (
 	day            = 24 * time.Hour
 	forecastLength = 7 * day
 	cacheTTL       = 1 * day
-
-	koDataEnvKey = "KO_DATA_PATH"
 )
 
-func Register(r *mux.Router, prefix string) {
-	dataDir := getDataDir()
-
-	indexHandler := makeIndexHandler()
-	r.HandleFunc("/", serverSideIndex)
-	r.Handle("/api/v1/index", indexHandler)
+func Register(r *mux.Router, prefix string, content embed.FS) {
+	r.Handle("/api/v1/index", makeIndexHandler(content))
 	r.HandleFunc("/api/v1/goodtimes", serveGoodTimes)
 
-	r.HandleFunc("/api/v2/index", serverSideIndex)
+	ssIndex := makeServerSideIndex(content)
+	r.HandleFunc("/", ssIndex)
+	r.HandleFunc("/api/v2/index", ssIndex)
 	r.HandleFunc("/api/v2/goodtimes", serveGoodTimes2)
 	r.HandleFunc("/api/v2/tide_image", serveTideImage)
 
-	r.PathPrefix("/static/").Handler(http.StripPrefix(prefix, http.FileServer(http.Dir(dataDir))))
-}
-
-func getDataDir() string {
-	if dir := os.Getenv(koDataEnvKey); dir != "" {
-		return dir
-	} else {
-		return "."
-	}
+	r.PathPrefix("/static/").Handler(http.StripPrefix(prefix, http.FileServer(http.FS(content))))
 }
 
 func makeFetchGoodTimes() func(time.Duration) ([]meta.GoodTime, error) {
@@ -130,10 +118,21 @@ func serveGoodTimes(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func makeIndexHandler() http.Handler {
-	file := path.Join(getDataDir(), "static", "index.html")
+func makeIndexHandler(content embed.FS) http.Handler {
+	filename := "static/index.html"
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, file)
+		f, err := content.Open(filename)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Printf("Failed to open %q: %+v", filename, err)
+			return
+		}
+		defer f.Close()
+		if _, err := io.Copy(w, f); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Printf("Failed to write %q to response: %+v", filename, err)
+			return
+		}
 	})
 }
 

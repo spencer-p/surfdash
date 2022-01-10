@@ -9,9 +9,7 @@ RUN CGO_ENABLED=0 go install .
 
 FROM gcr.io/distroless/static-debian11
 COPY --from=builder /go/bin/surfdash /app
-COPY kodata /kodata
 
-ENV KO_DATA_PATH=/kodata
 ENV TZ=America/Los_Angeles
 EXPOSE 8080
 CMD ["/app"]
