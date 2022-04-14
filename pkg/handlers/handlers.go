@@ -31,6 +31,7 @@ func Register(r *mux.Router, prefix string, content embed.FS) {
 
 	ssIndex := makeServerSideIndex(content)
 	r.HandleFunc("/", ssIndex)
+	r.HandleFunc("/config", makeConfigTideParameters(prefix, content))
 	r.HandleFunc("/api/v2/index", ssIndex)
 	r.HandleFunc("/api/v2/goodtimes", serveGoodTimes2)
 	r.HandleFunc("/api/v2/tide_image", serveTideImage)
@@ -183,7 +184,7 @@ func fetchGoodTimes2(dur time.Duration) ([]meta.GoodTime, error) {
 
 	sunevents := sunset.GetSunEvents(time.Now(), query.Duration, sunset.SantaCruz)
 
-	goodTimes := meta.GoodTimes2(meta.Conditions{preds, sunevents})
+	goodTimes := meta.GoodTimes2(meta.Conditions{preds, sunevents}, meta.Options{})
 
 	return goodTimes, nil
 }

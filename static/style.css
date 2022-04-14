@@ -168,3 +168,9 @@ html {
 		scroll-behavior: auto;
 	}
 }
+
+.config_row {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+}

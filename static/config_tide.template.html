@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Surfdash</title>
+		<link rel="stylesheet" href="static/style.css" />
+	</head>
+	<body>
+		<div class="content">
+			<h1 id="top">config surfdash</h1>
+			<form action="" method="post">
+				<div class="config_row">
+					<label for="min_tide">Lower tide boundary: </label>
+					<input type="number" step="0.1" name="min_tide" id="min_tide"
+							{{with .MinTide}} value="{{.Value}}" {{end}}>
+				</div>
+				<div class="config_row">
+					<label for="max_tide">Higher tide boundary: </label>
+					<input type="number" step="0.1" name="max_tide" id="max_tide"
+							{{with .MaxTide}} value="{{.Value}}" {{end}}>
+				</div>
+				<div class="config_row">
+					<div><!-- Placeholder. --></div>
+					<input type="submit" value="Submit">
+				</div>
+			</form>
+		</div>
+	</body>
+</html>

@@ -129,9 +129,18 @@ func indexOfLastEventBefore(t time.Time, events sunset.SunEvents) (int, error) {
 	return result, nil
 }
 
+// Options specifies options to tune GoodTimes.
+type Options struct {
+	// When LowTideThresh and HighTideThresh are specified,
+	// the resulting GoodTimes must have a tide level between
+	// Low and High.
+	LowTideThresh  *float64
+	HighTideThresh *float64
+}
+
 // GoodTimes2 is like GoodTimes but better.
-// TODO Name, document
-func GoodTimes2(c Conditions) []GoodTime {
+func GoodTimes2(c Conditions, opts Options) []GoodTime {
+	opts.ApplyDefaults()
 	result := []GoodTime{}
 	preds := c.Tides
 
@@ -146,9 +155,9 @@ func GoodTimes2(c Conditions) []GoodTime {
 		low := math.MaxFloat64
 		var lowt time.Time
 		for ; t.Before(tend); t = t.Add(step) {
-			// If no low tide, bail.
+			// If no desired tide, bail.
 			tideHeight := spl.Eval(t)
-			if tideHeight > smallTideThresh {
+			if tideHeight > *opts.HighTideThresh || tideHeight < *opts.LowTideThresh {
 				break
 			}
 
@@ -188,4 +197,15 @@ func GoodTimes2(c Conditions) []GoodTime {
 		}
 	}
 	return result
+}
+
+func (o *Options) ApplyDefaults() {
+	if o.LowTideThresh == nil {
+		low := float64(-1000)
+		o.LowTideThresh = &low
+	}
+	if o.HighTideThresh == nil {
+		high := float64(smallTideThresh)
+		o.HighTideThresh = &high
+	}
 }
