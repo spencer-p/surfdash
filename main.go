@@ -4,6 +4,7 @@ import (
 	"embed"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/spencer-p/surfdash/pkg/handlers"
@@ -59,4 +60,14 @@ func main() {
 	}
 	log.Printf("Listening and serving on %s/%s", srv.Addr, env.Prefix[1:])
 	log.Fatal(srv.ListenAndServe())
+}
+
+func WithHeaderInfo(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		header := r.Header
+		for key, vals := range header {
+			log.Printf("  %s: %s", key, strings.Join(vals, " "))
+		}
+		next.ServeHTTP(w, r)
+	})
 }

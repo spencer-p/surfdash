@@ -17,11 +17,20 @@ var (
 		},
 		[]string{"verb", "path", "code"},
 	)
+	userRequests = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name:      "user_requests",
+			Subsystem: "surfdash",
+			Help:      "Total count of requests by user ID.",
+		},
+		[]string{"userid"},
+	)
 )
 
 func init() {
 	prometheus.MustRegister(
 		requestLatency,
+		userRequests,
 	)
 }
 
@@ -31,6 +40,12 @@ func ObserveRequestLatency(verb, path, code string, latency float64) {
 		"verb": verb,
 		"path": path,
 	}).Observe(latency)
+}
+
+func ObserveUserRequest(userid string) {
+	userRequests.With(prometheus.Labels{
+		"userid": userid,
+	}).Inc()
 }
 
 func LatencyHandler(next http.Handler) http.Handler {

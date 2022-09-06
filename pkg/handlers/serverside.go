@@ -12,11 +12,13 @@ import (
 	"time"
 
 	"github.com/spencer-p/surfdash/pkg/meta"
+	"github.com/spencer-p/surfdash/pkg/metrics"
 	"github.com/spencer-p/surfdash/pkg/noaa"
 	"github.com/spencer-p/surfdash/pkg/sunset"
 	"github.com/spencer-p/surfdash/pkg/timetricks"
 	"github.com/spencer-p/surfdash/pkg/visualize"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 )
 
@@ -25,6 +27,7 @@ const (
 	sessionLastViewed = "last-viewed-referrer"
 	minTideCookieName = "minTide"
 	maxTideCookieName = "maxTide"
+	userID            = "userid"
 )
 
 var store = sessions.NewCookieStore([]byte(getSessionKey()))
@@ -48,6 +51,10 @@ func makeServerSideIndex(content embed.FS) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, _ := store.Get(r, sessionName)
 		session.Options.Path = "/"
+		if _, ok := session.Values[userID]; !ok {
+			session.Values[userID] = uuid.NewString()
+		}
+		metrics.ObserveUserRequest(session.Values[userID].(string))
 		session.Values[sessionLastViewed] = r.URL.String()
 		session.Save(r, w)
 
@@ -185,6 +192,10 @@ func makeConfigTideParameters(prefix string, content embed.FS) http.HandlerFunc 
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, _ := store.Get(r, sessionName)
 		session.Options.Path = "/"
+		if _, ok := session.Values[userID]; !ok {
+			session.Values[userID] = uuid.NewString()
+		}
+		metrics.ObserveUserRequest(session.Values[userID].(string))
 
 		if r.Method == "GET" {
 			session.Save(r, w)
