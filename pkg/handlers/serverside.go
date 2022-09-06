@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"strconv"
 	"time"
 
@@ -186,7 +187,7 @@ func goodTimeOptionsFromSession(s *sessions.Session) meta.Options {
 	return opts
 }
 
-func makeConfigTideParameters(prefix string, content embed.FS) http.HandlerFunc {
+func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.HandlerFunc {
 	configTideTemplate := template.Must(template.ParseFS(content, "static/config_tide.template.html"))
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -223,10 +224,8 @@ func makeConfigTideParameters(prefix string, content embed.FS) http.HandlerFunc 
 		}
 		session.Save(r, w)
 
-		referredFrom, ok := session.Values[sessionLastViewed].(string)
-		if !ok {
-			referredFrom = prefix
-		}
+		referredFrom := session.Values[sessionLastViewed].(string)
+		referredFrom = path.Join(redirectPrefix, referredFrom)
 		http.Redirect(w, r, referredFrom, http.StatusFound)
 	}
 }

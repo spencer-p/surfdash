@@ -23,6 +23,8 @@ spec:
         env:
         - name: TZ
           value: "America/Los_Angeles"
+        - name: REDIRECTPREFIX
+          value: /surfdash/
         livenessProbe:
           httpGet:
             path: "/"

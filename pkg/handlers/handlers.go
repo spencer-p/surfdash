@@ -25,18 +25,18 @@ const (
 	cacheTTL       = 1 * day
 )
 
-func Register(r *mux.Router, prefix string, content embed.FS) {
+func Register(r *mux.Router, redirectPrefix string, content embed.FS) {
 	r.Handle("/api/v1/index", makeIndexHandler(content))
 	r.HandleFunc("/api/v1/goodtimes", serveGoodTimes)
 
 	ssIndex := makeServerSideIndex(content)
 	r.HandleFunc("/", ssIndex)
-	r.HandleFunc("/config", makeConfigTideParameters(prefix, content))
+	r.HandleFunc("/config", makeConfigTideParameters(redirectPrefix, content))
 	r.HandleFunc("/api/v2/index", ssIndex)
 	r.HandleFunc("/api/v2/goodtimes", serveGoodTimes2)
 	r.HandleFunc("/api/v2/tide_image", serveTideImage)
 
-	r.PathPrefix("/static/").Handler(http.StripPrefix(prefix, http.FileServer(http.FS(content))))
+	r.PathPrefix("/static/").Handler(http.FileServer(http.FS(content)))
 }
 
 func makeFetchGoodTimes() func(time.Duration) ([]meta.GoodTime, error) {

@@ -20,9 +20,10 @@ import (
 var staticContent embed.FS
 
 type Config struct {
-	Port        string `default:"8080"`
-	MetricsPort string `default:"8081"`
-	Prefix      string `default:"/"`
+	Port           string `default:"8080"`
+	MetricsPort    string `default:"8081"`
+	Prefix         string `default:"/"`
+	RedirectPrefix string `default:"/"`
 }
 
 func main() {
@@ -35,7 +36,7 @@ func main() {
 	r.Use(helpttp.WithLog)
 	r.Use(metrics.LatencyHandler)
 	s := r.PathPrefix(env.Prefix).Subrouter()
-	handlers.Register(s, env.Prefix, staticContent)
+	handlers.Register(s, env.RedirectPrefix, staticContent)
 
 	if env.Prefix != "/" {
 		r.Handle("/", http.RedirectHandler(env.Prefix, http.StatusFound))
