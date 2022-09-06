@@ -136,6 +136,9 @@ type Options struct {
 	// Low and High.
 	LowTideThresh  *float64
 	HighTideThresh *float64
+
+	// Represents the default values. Optional.
+	DefaultLowTide, DefaultHighTide *float64
 }
 
 // GoodTimes2 is like GoodTimes but better.

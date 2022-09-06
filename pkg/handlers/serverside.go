@@ -201,6 +201,8 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 		if r.Method == "GET" {
 			session.Save(r, w)
 			tinput := goodTimeOptionsFromSession(session)
+			tinput.DefaultHighTide = ptr(float64(1))
+			tinput.DefaultLowTide = ptr(float64(-1000))
 			if err := configTideTemplate.Execute(w, tinput); err != nil {
 				log.Printf("Failed to write configTideTemplate: %v", err)
 			}
@@ -218,9 +220,13 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 
 		if val := r.PostForm.Get("min_tide"); val != "" {
 			session.Values[minTideCookieName] = val
+		} else {
+			delete(session.Values, minTideCookieName)
 		}
 		if val := r.PostForm.Get("max_tide"); val != "" {
 			session.Values[maxTideCookieName] = val
+		} else {
+			delete(session.Values, maxTideCookieName)
 		}
 		session.Save(r, w)
 
@@ -240,4 +246,8 @@ func getSessionKey() string {
 	} else {
 		return defaultKey
 	}
+}
+
+func ptr[T any](t T) *T {
+	return &t
 }
