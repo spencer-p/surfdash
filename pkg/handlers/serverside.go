@@ -230,10 +230,26 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 		}
 		session.Save(r, w)
 
-		referredFrom := session.Values[sessionLastViewed].(string)
-		referredFrom = path.Join(redirectPrefix, referredFrom)
+		// The referer supplied by the client is more reliable,
+		// as we may not save a session cookie when the client
+		// is serving from their cache. If there is no referer,
+		// we can use the last served cookie.
+		referredFrom := r.Header.Get("Referer")
+		if referredFrom == "" {
+			referredFrom := session.Values[sessionLastViewed].(string)
+			referredFrom = pathJoinPreservePrefix(redirectPrefix, referredFrom)
+		}
 		http.Redirect(w, r, referredFrom, http.StatusFound)
 	}
+}
+
+func pathJoinPreservePrefix(prefix string, suffix string) string {
+	trimmedPrefix := path.Join(prefix, "")
+	result := path.Join(prefix, suffix)
+	if result == trimmedPrefix {
+		return prefix
+	}
+	return result
 }
 
 // getSessionKey returns a key to encrypt session cookies defined in the
