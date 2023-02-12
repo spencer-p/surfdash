@@ -174,3 +174,8 @@ html {
 	flex-direction: row;
 	justify-content: space-between;
 }
+
+svg {
+	user-select: none;
+	-webkit-user-select: none;
+}
