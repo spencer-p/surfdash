@@ -135,11 +135,11 @@ h1 {
 }
 
 .footer {
-	text-align: right;
+	text-align: center;
 }
 
 .footer > p {
-	text-align: right;
+	text-align: center;
 }
 
 a {
