@@ -63,7 +63,7 @@ h1 {
 
 .goodtime_time:before {
 	content: "⭐";
-	color: transparent;
+	/* color: transparent; */
 	text-shadow: 0 0 0 var(--accent-yellow);
 	padding-right: var(--small-padding);
 }
