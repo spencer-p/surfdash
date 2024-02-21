@@ -314,6 +314,11 @@ func maybeMigrateUser(session *sessions.Session) error {
 		}
 	}
 
+	if newUser.MaxTide == nil && newUser.MinTide == nil {
+		log.Printf("User %s has no preferences, will not migrate", oldUser)
+		return nil
+	}
+
 	if r := db.Create(&newUser); r.Error != nil {
 		return r.Error
 	}
