@@ -25,6 +25,15 @@ spec:
           value: "America/Los_Angeles"
         - name: REDIRECTPREFIX
           value: /surfdash/
+        - name: PGHOST
+          value: "postgres.postgres.svc.cluster.local"
+        - name: PGPORT
+          value: "5432"
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: surfdash-postgres
+              key: password
         livenessProbe:
           httpGet:
             path: "/"
