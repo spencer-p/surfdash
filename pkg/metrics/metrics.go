@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -42,9 +43,12 @@ func ObserveRequestLatency(verb, path, code string, latency float64) {
 	}).Observe(latency)
 }
 
-func ObserveUserRequest(userid string) {
+func ObserveUserRequest(userid any) {
+	if userid == nil {
+		userid = "anon"
+	}
 	userRequests.With(prometheus.Labels{
-		"userid": userid,
+		"userid": fmt.Sprintf("%v", userid),
 	}).Inc()
 }
 

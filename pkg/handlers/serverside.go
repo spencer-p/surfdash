@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/spencer-p/surfdash/pkg/data"
 	"github.com/spencer-p/surfdash/pkg/meta"
 	"github.com/spencer-p/surfdash/pkg/metrics"
 	"github.com/spencer-p/surfdash/pkg/noaa"
@@ -19,7 +20,6 @@ import (
 	"github.com/spencer-p/surfdash/pkg/timetricks"
 	"github.com/spencer-p/surfdash/pkg/visualize"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 )
 
@@ -31,7 +31,10 @@ const (
 	userID            = "userid"
 )
 
-var store = sessions.NewCookieStore([]byte(getSessionKey()))
+var (
+	store = sessions.NewCookieStore([]byte(getSessionKey()))
+	db    = data.PostgresFromEnvOrDie()
+)
 
 type TemplateInput struct {
 	PresentationElements []PresentationElement
@@ -47,16 +50,14 @@ type PresentationElement struct {
 
 // serverSideIndex serves a good times page fully rendered on the server.
 func makeServerSideIndex(content embed.FS) http.HandlerFunc {
-	var indexTemplate = template.Must(template.ParseFS(content, "static/index.template.html"))
+	indexTemplate := template.Must(template.ParseFS(content, "static/index.template.html"))
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, _ := store.Get(r, sessionName)
 		session.Options.Path = "/"
-		if _, ok := session.Values[userID]; !ok {
-			session.Values[userID] = uuid.NewString()
-		}
-		metrics.ObserveUserRequest(session.Values[userID].(string))
+		metrics.ObserveUserRequest(session.Values[userID])
 		session.Values[sessionLastViewed] = r.URL.String()
+		_ = maybeMigrateUser(session)
 		session.Save(r, w)
 
 		date := time.Now()
@@ -172,18 +173,21 @@ func goodTimesToPresentationElements(tideimages *visualize.Tidal, goodTimes []me
 
 func goodTimeOptionsFromSession(s *sessions.Session) meta.Options {
 	opts := meta.Options{}
-	if val, ok := s.Values[minTideCookieName].(string); ok {
-		low, err := strconv.ParseFloat(val, 64)
-		if err == nil {
-			opts.LowTideThresh = &low
-		}
+
+	id, ok := s.Values[userID]
+	if !ok {
+		return opts
 	}
-	if val, ok := s.Values[maxTideCookieName].(string); ok {
-		high, err := strconv.ParseFloat(val, 64)
-		if err == nil {
-			opts.HighTideThresh = &high
-		}
+
+	// Note the db lookup can fail here, and that's
+	// fine. We'll just use default options.
+	var user data.User
+	if r := db.First(&user, id); r.Error != nil {
+		log.Printf("Failed to find user %v: %v", id, r.Error)
 	}
+	opts.LowTideThresh = user.MinTide
+	opts.HighTideThresh = user.MaxTide
+
 	return opts
 }
 
@@ -193,12 +197,10 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, _ := store.Get(r, sessionName)
 		session.Options.Path = "/"
-		if _, ok := session.Values[userID]; !ok {
-			session.Values[userID] = uuid.NewString()
-		}
-		metrics.ObserveUserRequest(session.Values[userID].(string))
+		metrics.ObserveUserRequest(session.Values[userID])
 
 		if r.Method == "GET" {
+			_ = maybeMigrateUser(session)
 			session.Save(r, w)
 			tinput := goodTimeOptionsFromSession(session)
 			tinput.DefaultHighTide = ptr(float64(1))
@@ -208,8 +210,13 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 			}
 			return
 		}
-
 		// The remainder of this function assumes method is POST.
+		if r.Method != "POST" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// Parse the form data.
 		if err := r.ParseForm(); err != nil {
 			msg := fmt.Sprintf("Failed to parse form: %v", err)
 			log.Println(msg)
@@ -218,28 +225,35 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 			return
 		}
 
-		if val := r.PostForm.Get("min_tide"); val != "" {
-			session.Values[minTideCookieName] = val
+		var user data.User
+		db.First(&user, session.Values[userID])
+		if f, err := strconv.ParseFloat(r.PostForm.Get("min_tide"), 64); err == nil {
+			user.MinTide = &f
 		} else {
-			delete(session.Values, minTideCookieName)
+			user.MaxTide = nil
 		}
-		if val := r.PostForm.Get("max_tide"); val != "" {
-			session.Values[maxTideCookieName] = val
+		if f, err := strconv.ParseFloat(r.PostForm.Get("max_tide"), 64); err == nil {
+			user.MaxTide = &f
 		} else {
-			delete(session.Values, maxTideCookieName)
+			user.MinTide = nil
 		}
+		if tx := db.Save(&user); tx.Error != nil {
+			msg := fmt.Sprintf("Failed to save preferences: %v", tx.Error)
+			log.Println(msg)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, msg)
+			return
+		}
+		session.Values[userID] = user.ID
 		session.Save(r, w)
 
-		// The referer supplied by the client is more reliable,
-		// as we may not save a session cookie when the client
-		// is serving from their cache. If there is no referer,
-		// we can use the last served cookie.
-		referredFrom := r.Header.Get("Referer")
-		if referredFrom == "" {
-			referredFrom := session.Values[sessionLastViewed].(string)
-			referredFrom = pathJoinPreservePrefix(redirectPrefix, referredFrom)
+		// Redirect to whatever they saw last, or the index.
+		referredFrom := session.Values[sessionLastViewed].(string)
+		if referredFrom == "/config" {
+			referredFrom = "/"
 		}
-		http.Redirect(w, r, referredFrom, http.StatusFound)
+		redirectTo := pathJoinPreservePrefix(redirectPrefix, referredFrom)
+		http.Redirect(w, r, redirectTo, http.StatusFound)
 	}
 }
 
@@ -266,4 +280,47 @@ func getSessionKey() string {
 
 func ptr[T any](t T) *T {
 	return &t
+}
+
+func maybeMigrateUser(session *sessions.Session) error {
+	user, ok := session.Values[userID]
+	if !ok {
+		return nil
+	}
+	if _, ok := user.(string); !ok {
+		return nil
+	}
+	// The session has a string user ID and not int, so let's migrate.
+	oldUser := user
+	log.Printf("Migrating user %s", oldUser)
+	newUser := data.User{}
+
+	if val, ok := session.Values[minTideCookieName].(string); ok {
+		low, err := strconv.ParseFloat(val, 64)
+		if err == nil {
+			newUser.MinTide = &low
+		}
+	}
+	if val, ok := session.Values[maxTideCookieName].(string); ok {
+		high, err := strconv.ParseFloat(val, 64)
+		if err == nil {
+			newUser.MaxTide = &high
+		}
+	}
+
+	if r := db.Create(&newUser); r.Error != nil {
+		return r.Error
+	}
+	session.Values[userID] = newUser.ID
+	log.Printf("User %s migrated to %d", oldUser, newUser.ID)
+	return nil
+}
+
+func newUser(session *sessions.Session) error {
+	newUser := data.User{}
+	if r := db.Create(&newUser); r.Error != nil {
+		return r.Error
+	}
+	session.Values[userID] = newUser.ID
+	return nil
 }
