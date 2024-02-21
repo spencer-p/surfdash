@@ -29,7 +29,8 @@ const (
 	minTideCookieName = "minTide"
 	maxTideCookieName = "maxTide"
 	userID            = "userid"
-	400days = 60*60*24*400 // in seconds.
+	// See https://developer.chrome.com/blog/cookie-max-age-expires.
+	defaultMaxAge = 60 * 60 * 24 * 400 // 400 days in seconds.
 )
 
 var (
@@ -56,7 +57,8 @@ func makeServerSideIndex(content embed.FS) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, _ := store.Get(r, sessionName)
 		session.Options.Path = "/"
-		session.Options.MaxAge = 400days
+		session.Options.MaxAge = defaultMaxAge
+		session.Options.Secure = true
 		metrics.ObserveUserRequest(session.Values[userID])
 		session.Values[sessionLastViewed] = r.URL.String()
 		_ = maybeMigrateUser(session)
@@ -199,7 +201,8 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, _ := store.Get(r, sessionName)
 		session.Options.Path = "/"
-		session.Options.MaxAge = 400days
+		session.Options.MaxAge = defaultMaxAge
+		session.Options.Secure = true
 		metrics.ObserveUserRequest(session.Values[userID])
 
 		if r.Method == "GET" {
