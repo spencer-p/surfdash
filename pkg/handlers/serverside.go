@@ -240,7 +240,9 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 
 		var user data.User
 		if id, ok := session.Values[userID].(uint); ok {
-			user.ID = id
+			// Read-modify-write if the user provided an ID.
+			// Otherwise, one will be generated with db.Save later.
+			db.First(&user, id)
 		}
 		if f, err := strconv.ParseFloat(r.PostForm.Get("min_tide"), 64); err == nil {
 			user.MinTide = &f
