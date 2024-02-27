@@ -34,6 +34,16 @@ spec:
             secretKeyRef:
               name: surfdash-postgres
               key: password
+        - name: SESSION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: surfdash-keys
+              key: session-key
+        - name: ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: surfdash-keys
+              key: encryption-key
         livenessProbe:
           httpGet:
             path: "/"

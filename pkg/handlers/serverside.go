@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"embed"
 	"fmt"
 	"html/template"
@@ -19,6 +20,7 @@ import (
 	"github.com/spencer-p/surfdash/pkg/sunset"
 	"github.com/spencer-p/surfdash/pkg/timetricks"
 	"github.com/spencer-p/surfdash/pkg/visualize"
+	"golang.org/x/crypto/pbkdf2"
 
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
@@ -36,7 +38,14 @@ const (
 
 var (
 	store = &sessions.CookieStore{
-		Codecs: securecookie.CodecsFromPairs([]byte(getSessionKey())),
+		Codecs: securecookie.CodecsFromPairs(
+			getSessionKey(),
+			getEncryptionKey(),
+			getSessionKey(),
+			nil,
+			[]byte("deadbeef"), // TODO: Remove.
+			nil,
+		),
 		Options: &sessions.Options{
 			Path:     "/",
 			MaxAge:   defaultMaxAge,
@@ -286,13 +295,21 @@ func pathJoinPreservePrefix(prefix string, suffix string) string {
 // getSessionKey returns a key to encrypt session cookies defined in the
 // environment.
 // If it is not set, it uses a compile-time default.
-func getSessionKey() string {
-	const defaultKey = "deadbeef"
+func getSessionKey() []byte {
+	defaultKey := []byte("deadbeef")
 	if key := os.Getenv("SESSION_KEY"); key != "" {
-		return key
+		return []byte(key)
 	} else {
 		return defaultKey
 	}
+}
+
+func getEncryptionKey() []byte {
+	password := "deadbeef"
+	if fromEnv := os.Getenv("ENCRYPTION_KEY"); fromEnv != "" {
+		password = fromEnv
+	}
+	return pbkdf2.Key([]byte(password), []byte{}, 4096, 32, sha1.New)
 }
 
 func ptr[T any](t T) *T {
