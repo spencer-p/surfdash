@@ -20,6 +20,7 @@ import (
 	"github.com/spencer-p/surfdash/pkg/timetricks"
 	"github.com/spencer-p/surfdash/pkg/visualize"
 
+	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 )
 
@@ -34,9 +35,21 @@ const (
 )
 
 var (
-	store = sessions.NewCookieStore([]byte(getSessionKey()))
-	db    = data.PostgresFromEnvOrDie()
+	store = &sessions.CookieStore{
+		Codecs: securecookie.CodecsFromPairs([]byte(getSessionKey())),
+		Options: &sessions.Options{
+			Path:     "/",
+			MaxAge:   defaultMaxAge,
+			Secure:   true,
+			HttpOnly: true,
+		},
+	}
+	db = data.PostgresFromEnvOrDie()
 )
+
+func init() {
+	store.MaxAge(defaultMaxAge)
+}
 
 type TemplateInput struct {
 	PresentationElements []PresentationElement
@@ -56,12 +69,9 @@ func makeServerSideIndex(content embed.FS) http.HandlerFunc {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, _ := store.Get(r, sessionName)
-		session.Options.Path = "/"
-		session.Options.MaxAge = defaultMaxAge
-		session.Options.Secure = true
 		metrics.ObserveUserRequest(session.Values[userID])
 		session.Values[sessionLastViewed] = r.URL.String()
-		_ = maybeMigrateUser(session)
+		maybeMigrateUser(session)
 		session.Save(r, w)
 
 		date := time.Now()
@@ -200,13 +210,10 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, _ := store.Get(r, sessionName)
-		session.Options.Path = "/"
-		session.Options.MaxAge = defaultMaxAge
-		session.Options.Secure = true
 		metrics.ObserveUserRequest(session.Values[userID])
 
 		if r.Method == "GET" {
-			_ = maybeMigrateUser(session)
+			maybeMigrateUser(session)
 			session.Save(r, w)
 			tinput := goodTimeOptionsFromSession(session)
 			tinput.DefaultHighTide = ptr(float64(1))
@@ -232,7 +239,9 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 		}
 
 		var user data.User
-		db.First(&user, session.Values[userID])
+		if id, ok := session.Values[userID].(uint); ok {
+			user.ID = id
+		}
 		if f, err := strconv.ParseFloat(r.PostForm.Get("min_tide"), 64); err == nil {
 			user.MinTide = &f
 		} else {
@@ -254,8 +263,8 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 		session.Save(r, w)
 
 		// Redirect to whatever they saw last, or the index.
-		referredFrom := session.Values[sessionLastViewed].(string)
-		if referredFrom == "/config" {
+		referredFrom, ok := session.Values[sessionLastViewed].(string)
+		if !ok || referredFrom == "/config" {
 			referredFrom = "/"
 		}
 		redirectTo := pathJoinPreservePrefix(redirectPrefix, referredFrom)
@@ -288,50 +297,20 @@ func ptr[T any](t T) *T {
 	return &t
 }
 
-func maybeMigrateUser(session *sessions.Session) error {
+func maybeMigrateUser(session *sessions.Session) {
+	delete(session.Values, minTideCookieName)
+	delete(session.Values, maxTideCookieName)
 	user, ok := session.Values[userID]
 	if !ok {
-		return nil
+		return
 	}
 	if _, ok := user.(string); !ok {
-		return nil
+		return
 	}
-	// The session has a string user ID and not int, so let's migrate.
-	oldUser := user
-	log.Printf("Migrating user %s", oldUser)
-	newUser := data.User{}
-
-	if val, ok := session.Values[minTideCookieName].(string); ok {
-		low, err := strconv.ParseFloat(val, 64)
-		if err == nil {
-			newUser.MinTide = &low
-		}
-	}
-	if val, ok := session.Values[maxTideCookieName].(string); ok {
-		high, err := strconv.ParseFloat(val, 64)
-		if err == nil {
-			newUser.MaxTide = &high
-		}
-	}
-
-	if newUser.MaxTide == nil && newUser.MinTide == nil {
-		log.Printf("User %s has no preferences, will not migrate", oldUser)
-		return nil
-	}
-
-	if r := db.Create(&newUser); r.Error != nil {
-		return r.Error
-	}
-	session.Values[userID] = newUser.ID
-	log.Printf("User %s migrated to %d", oldUser, newUser.ID)
-	return nil
-}
-
-func newUser(session *sessions.Session) error {
-	newUser := data.User{}
-	if r := db.Create(&newUser); r.Error != nil {
-		return r.Error
-	}
-	session.Values[userID] = newUser.ID
-	return nil
+	// We used to use string IDs.
+	// It's unlikely we get an old ID, because the cookies
+	// had default max ages. If we do get such a user,
+	// we just drop their ID.
+	// Can be deleted starting in April 2024.
+	delete(session.Values, userID)
 }
