@@ -324,6 +324,11 @@ func maybeMigrateUser(session *sessions.Session) {
 		return
 	}
 	if _, ok := user.(string); !ok {
+		if id, ok := user.(uint); ok && id == 1 {
+			// Somehow multiple people got id=1.
+			// Drop them.
+			delete(session.Values, userID)
+		}
 		return
 	}
 	// We used to use string IDs.
