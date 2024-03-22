@@ -81,7 +81,9 @@ func makeServerSideIndex(content embed.FS) http.HandlerFunc {
 		metrics.ObserveUserRequest(session.Values[userID])
 		session.Values[sessionLastViewed] = r.URL.String()
 		maybeMigrateUser(session)
-		session.Save(r, w)
+		if err := session.Save(r, w); err != nil {
+			log.Println("save session err", err)
+		}
 
 		date := time.Now()
 		startString := r.FormValue("start")
@@ -256,12 +258,12 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 		if f, err := strconv.ParseFloat(r.PostForm.Get("min_tide"), 64); err == nil {
 			user.MinTide = &f
 		} else {
-			user.MaxTide = nil
+			user.MinTide = nil
 		}
 		if f, err := strconv.ParseFloat(r.PostForm.Get("max_tide"), 64); err == nil {
 			user.MaxTide = &f
 		} else {
-			user.MinTide = nil
+			user.MaxTide = nil
 		}
 		if tx := db.Save(&user); tx.Error != nil {
 			msg := fmt.Sprintf("Failed to save preferences: %v", tx.Error)
