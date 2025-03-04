@@ -80,7 +80,6 @@ func makeServerSideIndex(content embed.FS) http.HandlerFunc {
 		session, _ := store.Get(r, sessionName)
 		metrics.ObserveUserRequest(session.Values[userID])
 		session.Values[sessionLastViewed] = r.URL.String()
-		maybeMigrateUser(session)
 		if err := session.Save(r, w); err != nil {
 			log.Println("save session err", err)
 		}
@@ -232,7 +231,6 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 		metrics.ObserveUserRequest(session.Values[userID])
 
 		if r.Method == "GET" {
-			maybeMigrateUser(session)
 			session.Save(r, w)
 			tinput := goodTimeOptionsFromSession(session)
 			tinput.DefaultHighTide = ptr(float64(1))
@@ -335,27 +333,4 @@ func getEncryptionKey() []byte {
 
 func ptr[T any](t T) *T {
 	return &t
-}
-
-func maybeMigrateUser(session *sessions.Session) {
-	delete(session.Values, minTideCookieName)
-	delete(session.Values, maxTideCookieName)
-	user, ok := session.Values[userID]
-	if !ok {
-		return
-	}
-	if _, ok := user.(string); !ok {
-		if id, ok := user.(uint); ok && id == 1 {
-			// Somehow multiple people got id=1.
-			// Drop them.
-			delete(session.Values, userID)
-		}
-		return
-	}
-	// We used to use string IDs.
-	// It's unlikely we get an old ID, because the cookies
-	// had default max ages. If we do get such a user,
-	// we just drop their ID.
-	// Can be deleted starting in April 2024.
-	delete(session.Values, userID)
 }
