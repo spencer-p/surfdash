@@ -46,6 +46,15 @@
 						   {{- end}}>
 				</div>
 				<div class="config_row">
+					<label for="birthday">(Optional) Birthday: </label>
+					<input type="date"
+						   name="birthday"
+						   id="birthday"
+						   {{with .User.Birthday -}}
+						   value="{{.Format "2006-01-02"}}"
+						   {{- end}}>
+				</div>
+				<div class="config_row">
 					<div><!-- Placeholder. --></div>
 					<input type="submit" value="Submit">
 				</div>
