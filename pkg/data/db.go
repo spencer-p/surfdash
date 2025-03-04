@@ -15,6 +15,7 @@ type User struct {
 	MinTide  *float64
 	MaxTide  *float64
 	LastSeen time.Time
+	Birthday time.Time
 }
 
 func PostgresFromEnvOrDie() *gorm.DB {

@@ -276,6 +276,17 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 			user.MaxTide = nil
 		}
 
+		// Parse the birthday field.
+		birthdayStr := r.PostForm.Get("birthday")
+		if birthdayStr != "" {
+			birthday, err := time.Parse("2006-01-02", birthdayStr)
+			if err == nil {
+				user.Birthday = birthday
+			} else {
+				log.Printf("Failed to parse birthday %q: %v", birthdayStr, err)
+			}
+		}
+
 		// Log the time since the last update.
 		if user.UpdatedAt.IsZero() {
 			log.Printf("User %d has never been updated", user.ID)
