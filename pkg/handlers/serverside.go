@@ -213,7 +213,7 @@ func goodTimeOptionsFromSession(s *sessions.Session) (meta.Options, *data.User) 
 		// Log the time since we last saw the user.
 		if !user.LastSeen.IsZero() {
 			sinceLastUpdate := time.Since(user.LastSeen)
-			log.Printf("User %d was last seen %s ago", user.ID, sinceLastUpdate)
+			log.Printf("User %d (%q) was last seen %s ago", id, user.Name, sinceLastUpdate)
 		}
 		user.LastSeen = time.Now()
 		db.Save(&user)
@@ -289,10 +289,10 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 
 		// Log the time since the last update.
 		if user.UpdatedAt.IsZero() {
-			log.Printf("User %d has never been updated", user.ID)
+			log.Printf("User %d (%q) has never been updated", id, user.Name)
 		} else {
 			sinceLastUpdate := time.Now().Sub(user.UpdatedAt)
-			log.Printf("User %d was last updated %s ago", user.ID, sinceLastUpdate)
+			log.Printf("User %d (%q) was last updated %s ago", id, user.Name, sinceLastUpdate)
 		}
 
 		// Set the LastSeen column to the current time.
