@@ -11,6 +11,7 @@ import (
 type User struct {
 	gorm.Model
 	MinTide, MaxTide *float64
+	LastSeen        time.Time
 }
 
 func PostgresFromEnvOrDie() *gorm.DB {

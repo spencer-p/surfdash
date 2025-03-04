@@ -209,6 +209,14 @@ func goodTimeOptionsFromSession(s *sessions.Session) meta.Options {
 	var user data.User
 	if r := db.First(&user, id); r.Error != nil {
 		log.Printf("Failed to find user %v: %v", id, r.Error)
+	} else {
+		// Log the time since we last saw the user.
+		if !user.LastSeen.IsZero() {
+			sinceLastUpdate := time.Since(user.LastSeen)
+			log.Printf("User %d was last seen %s ago", user.ID, sinceLastUpdate)
+		}
+		user.LastSeen = time.Now()
+		db.Save(&user)
 	}
 	opts.LowTideThresh = user.MinTide
 	opts.HighTideThresh = user.MaxTide
@@ -265,6 +273,17 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 		} else {
 			user.MaxTide = nil
 		}
+
+		// Log the time since the last update.
+		if user.UpdatedAt.IsZero() {
+			log.Printf("User %d has never been updated", user.ID)
+		} else {
+			sinceLastUpdate := time.Now().Sub(user.UpdatedAt)
+			log.Printf("User %d was last updated %s ago", user.ID, sinceLastUpdate)
+		}
+
+		// Set the LastSeen column to the current time.
+		user.LastSeen = time.Now()
 		if tx := db.Save(&user); tx.Error != nil {
 			msg := fmt.Sprintf("Failed to save preferences: %v", tx.Error)
 			log.Println(msg)
