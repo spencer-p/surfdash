@@ -3,6 +3,7 @@ package data
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -11,7 +12,7 @@ import (
 type User struct {
 	gorm.Model
 	MinTide, MaxTide *float64
-	LastSeen        time.Time
+	LastSeen         time.Time
 }
 
 func PostgresFromEnvOrDie() *gorm.DB {
