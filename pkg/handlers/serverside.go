@@ -64,6 +64,7 @@ type TemplateInput struct {
 	PresentationElements []PresentationElement
 	NextStart            string
 	PrevStart            string
+	Name                 string
 }
 
 type PresentationElement struct {
@@ -116,7 +117,7 @@ func makeServerSideIndex(content embed.FS) http.HandlerFunc {
 		// Truncate the good times predictions to account for the
 		// extra data data from above.
 		trimIndex := lastIndexBefore(preds, timetricks.TrimClock(date.Add(forecastLength)))
-		opts := goodTimeOptionsFromSession(session)
+		opts, _ := goodTimeOptionsFromSession(session)
 		goodTimes := meta.GoodTimes2(meta.Conditions{preds[:trimIndex+1], sunevents}, opts)
 		tideimages := visualize.NewTidal(preds, sunevents)
 
@@ -195,12 +196,12 @@ func goodTimesToPresentationElements(tideimages *visualize.Tidal, goodTimes []me
 	return f(nil, goodTimes)
 }
 
-func goodTimeOptionsFromSession(s *sessions.Session) meta.Options {
+func goodTimeOptionsFromSession(s *sessions.Session) (meta.Options, *data.User) {
 	opts := meta.Options{}
 
 	id, ok := s.Values[userID]
 	if !ok {
-		return opts
+		return opts, nil
 	}
 
 	// Note the db lookup can fail here, and that's
@@ -220,7 +221,7 @@ func goodTimeOptionsFromSession(s *sessions.Session) meta.Options {
 	opts.LowTideThresh = user.MinTide
 	opts.HighTideThresh = user.MaxTide
 
-	return opts
+	return opts, &user
 }
 
 func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.HandlerFunc {
@@ -232,10 +233,13 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 
 		if r.Method == "GET" {
 			session.Save(r, w)
-			tinput := goodTimeOptionsFromSession(session)
-			tinput.DefaultHighTide = ptr(float64(1))
-			tinput.DefaultLowTide = ptr(float64(-1000))
-			if err := configTideTemplate.Execute(w, tinput); err != nil {
+			opts, user := goodTimeOptionsFromSession(session)
+			opts.DefaultHighTide = ptr(float64(1))
+			opts.DefaultLowTide = ptr(float64(-1000))
+			if err := configTideTemplate.Execute(w, map[string]any{
+				"Options": opts,
+				"User":    user,
+			}); err != nil {
 				log.Printf("Failed to write configTideTemplate: %v", err)
 			}
 			return
@@ -282,6 +286,7 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 
 		// Set the LastSeen column to the current time.
 		user.LastSeen = time.Now()
+		user.Name = r.PostForm.Get("name")
 		if tx := db.Save(&user); tx.Error != nil {
 			msg := fmt.Sprintf("Failed to save preferences: %v", tx.Error)
 			log.Println(msg)
@@ -290,6 +295,7 @@ func makeConfigTideParameters(redirectPrefix string, content embed.FS) http.Hand
 			return
 		}
 		session.Values[userID] = user.ID
+		session.Values["name"] = r.PostForm.Get("name")
 		session.Save(r, w)
 
 		// Redirect to whatever they saw last, or the index.
